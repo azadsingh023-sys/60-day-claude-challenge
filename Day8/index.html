@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌍 Personal Environmental Health Analyzer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg-0:#060a10; --bg-1:#0b121c; --bg-2:#111b28; --panel:rgba(255,255,255,.035);
+  --panel-b:rgba(255,255,255,.09); --panel-hi:rgba(255,255,255,.06);
+  --text-0:#eef3f8; --text-1:#a9b8c9; --text-2:#6c7c8f;
+  --teal:#2dd4c8; --teal-dim:#1a8f87; --coral:#ff6b4a; --amber:#ffc857; --violet:#8b7bff;
+  --good:#3ddc84; --sat:#a8e063; --mod:#ffd23f; --poor:#ff9142; --vpoor:#ff5252; --severe:#c22b4d;
+  --radius:18px; --radius-sm:12px;
+  --font-d:'Space Grotesk',sans-serif; --font-b:'Inter',sans-serif; --font-m:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:var(--font-b); color:var(--text-0); background:var(--bg-0);
+  background-image:
+    radial-gradient(ellipse 1200px 700px at 15% -10%, rgba(45,212,200,.10), transparent 60%),
+    radial-gradient(ellipse 900px 600px at 100% 10%, rgba(139,123,255,.08), transparent 55%),
+    radial-gradient(ellipse 800px 500px at 50% 100%, rgba(255,107,74,.06), transparent 55%);
+  min-height:100vh; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.001s !important; transition-duration:.001s !important;} }
+
+::selection{ background:var(--teal); color:#04110f; }
+a{color:var(--teal);}
+.wrap{ max-width:1360px; margin:0 auto; padding:0 24px; }
+.eyebrow{ font-family:var(--font-m); letter-spacing:.14em; text-transform:uppercase; font-size:11px; color:var(--teal); font-weight:600; }
+h1,h2,h3{ font-family:var(--font-d); letter-spacing:-.01em; }
+
+/* ---------- HEADER ---------- */
+header{ position:sticky; top:0; z-index:50; backdrop-filter:blur(16px); background:rgba(6,10,16,.72); border-bottom:1px solid var(--panel-b); }
+.nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 0; gap:16px; flex-wrap:wrap; }
+.brand{ display:flex; align-items:center; gap:10px; font-family:var(--font-d); font-weight:700; font-size:18px; }
+.brand .dot{ width:10px; height:10px; border-radius:50%; background:var(--teal); box-shadow:0 0 14px 3px var(--teal); }
+.loc-picker{ display:flex; align-items:center; gap:10px; background:var(--panel); border:1px solid var(--panel-b); border-radius:999px; padding:8px 8px 8px 16px; }
+.loc-picker svg{ width:15px; height:15px; stroke:var(--teal); flex-shrink:0; }
+.loc-picker select{
+  appearance:none; background:transparent; border:none; color:var(--text-0); font-family:var(--font-m);
+  font-size:13px; font-weight:600; padding:6px 30px 6px 4px; cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236c7c8f'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center;
+}
+.loc-picker select:focus{ outline:2px solid var(--teal); outline-offset:2px; border-radius:8px; }
+.updated-badge{ font-family:var(--font-m); font-size:11px; color:var(--text-2); white-space:nowrap; }
+
+/* ---------- HERO ---------- */
+.hero{ padding:52px 0 36px; display:grid; grid-template-columns:340px 1fr; gap:44px; align-items:center; }
+@media (max-width:900px){ .hero{ grid-template-columns:1fr; padding:32px 0 24px; } }
+
+.gauge-wrap{ position:relative; width:300px; height:300px; margin:0 auto; }
+.gauge-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.gauge-bg{ fill:none; stroke:rgba(255,255,255,.06); stroke-width:16; }
+.gauge-fg{ fill:none; stroke-width:16; stroke-linecap:round; transition:stroke-dasharray 1.1s cubic-bezier(.4,0,.2,1), stroke 1.1s ease; filter:drop-shadow(0 0 10px currentColor); }
+.gauge-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.gauge-breathe{ animation:breathe 4.2s ease-in-out infinite; }
+@keyframes breathe{ 0%,100%{ filter:drop-shadow(0 0 8px currentColor);} 50%{ filter:drop-shadow(0 0 22px currentColor);} }
+.gauge-num{ font-family:var(--font-d); font-size:52px; font-weight:700; line-height:1; }
+.gauge-label{ font-family:var(--font-m); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-2); margin-top:6px; }
+.gauge-cat{ margin-top:10px; font-family:var(--font-m); font-size:12px; font-weight:600; padding:5px 14px; border-radius:999px; }
+
+.hero-right h1{ font-size:clamp(28px,3.6vw,42px); font-weight:700; line-height:1.08; margin-bottom:14px; }
+.hero-right h1 span{ color:var(--teal); }
+.hero-sub{ color:var(--text-1); font-size:15.5px; max-width:620px; margin-bottom:22px; }
+.hero-chips{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+.chip{ font-family:var(--font-m); font-size:12px; padding:7px 13px; border-radius:10px; background:var(--panel); border:1px solid var(--panel-b); color:var(--text-1); display:flex; align-items:center; gap:6px; }
+.chip b{ color:var(--text-0); font-weight:600; }
+.data-flag{ font-size:10px; padding:2px 7px; border-radius:6px; background:rgba(255,200,87,.14); color:var(--amber); border:1px solid rgba(255,200,87,.3); font-weight:600; }
+
+/* ---------- SECTION HEADERS ---------- */
+section{ padding:34px 0; }
+.sec-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
+.sec-head h2{ font-size:24px; font-weight:700; display:flex; align-items:center; gap:10px; }
+.sec-head p{ color:var(--text-2); font-size:13.5px; max-width:480px; }
+
+/* ---------- METRIC CARDS ---------- */
+.metrics{ display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+@media (max-width:1100px){ .metrics{ grid-template-columns:repeat(2,1fr);} }
+@media (max-width:520px){ .metrics{ grid-template-columns:1fr;} }
+.metric-card{ background:var(--panel); border:1px solid var(--panel-b); border-radius:var(--radius-sm); padding:18px 18px; position:relative; overflow:hidden; transition:transform .25s ease, border-color .25s ease; }
+.metric-card:hover{ transform:translateY(-3px); border-color:rgba(45,212,200,.4); }
+.metric-card .m-icon{ font-size:18px; opacity:.85; }
+.metric-card .m-val{ font-family:var(--font-d); font-size:30px; font-weight:700; margin:8px 0 2px; }
+.metric-card .m-label{ font-size:12px; color:var(--text-2); }
+.metric-card .m-sub{ font-size:11.5px; color:var(--text-1); margin-top:4px; font-family:var(--font-m); }
+
+/* ---------- PANEL / GLASS CARD ---------- */
+.panel{ background:var(--panel); border:1px solid var(--panel-b); border-radius:var(--radius); padding:22px; }
+
+/* ---------- FILTER BAR ---------- */
+.filter-bar{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.filter-group{ display:flex; flex-direction:column; gap:6px; }
+.filter-group label{ font-family:var(--font-m); font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-2); }
+.filter-bar select, .filter-bar input[type=range]{ accent-color:var(--teal); }
+.filter-bar select{
+  background:var(--bg-2); color:var(--text-0); border:1px solid var(--panel-b); border-radius:9px; padding:9px 12px;
+  font-family:var(--font-b); font-size:13px; min-width:150px; cursor:pointer;
+}
+.range-row{ display:flex; align-items:center; gap:10px; }
+.range-row input[type=range]{ width:150px; }
+.range-val{ font-family:var(--font-m); font-size:12px; color:var(--teal); min-width:38px; }
+.toggle-btn{ font-family:var(--font-m); font-size:12.5px; padding:9px 16px; border-radius:9px; border:1px solid var(--panel-b); background:var(--bg-2); color:var(--text-1); cursor:pointer; transition:.2s; font-weight:600; }
+.toggle-btn.active{ background:linear-gradient(135deg,var(--teal),var(--teal-dim)); color:#04110f; border-color:transparent; }
+.reset-link{ font-family:var(--font-m); font-size:12px; color:var(--text-2); background:none; border:none; cursor:pointer; text-decoration:underline; margin-left:auto; }
+
+/* ---------- CHARTS ---------- */
+.chart-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-top:16px; }
+@media (max-width:900px){ .chart-grid{ grid-template-columns:1fr; } }
+.chart-card h3{ font-size:14.5px; font-weight:600; margin-bottom:2px; }
+.chart-card .chart-note{ font-size:11px; color:var(--text-2); margin-bottom:12px; }
+.chart-card canvas{ max-height:260px; }
+.chart-card.wide{ grid-column:1 / -1; }
+
+/* ---------- CITY CARDS ---------- */
+.city-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(258px,1fr)); gap:14px; margin-top:18px; }
+.city-card{ background:var(--panel); border:1px solid var(--panel-b); border-radius:var(--radius-sm); padding:18px; cursor:pointer; transition:.22s ease; position:relative; }
+.city-card:hover{ transform:translateY(-4px); border-color:rgba(45,212,200,.45); box-shadow:0 10px 30px -12px rgba(0,0,0,.6); }
+.city-card.selected{ border-color:var(--teal); box-shadow:0 0 0 1px var(--teal), 0 10px 30px -10px rgba(45,212,200,.35); }
+.city-card .cc-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
+.city-card .cc-name{ font-family:var(--font-d); font-weight:700; font-size:16.5px; }
+.city-card .cc-state{ font-size:11.5px; color:var(--text-2); }
+.city-card .cc-badge{ font-family:var(--font-m); font-size:10.5px; font-weight:700; padding:4px 9px; border-radius:7px; white-space:nowrap; }
+.city-card .cc-aqi{ font-family:var(--font-d); font-size:34px; font-weight:700; line-height:1; }
+.city-card .cc-aqi-label{ font-family:var(--font-m); font-size:10px; color:var(--text-2); text-transform:uppercase; letter-spacing:.06em; }
+.cc-bars{ margin-top:12px; display:flex; flex-direction:column; gap:7px; }
+.cc-bar-row{ display:flex; align-items:center; gap:8px; }
+.cc-bar-row span{ font-family:var(--font-m); font-size:10.5px; color:var(--text-2); width:44px; flex-shrink:0; }
+.cc-bar-track{ flex:1; height:6px; border-radius:4px; background:rgba(255,255,255,.06); overflow:hidden; }
+.cc-bar-fill{ height:100%; border-radius:4px; }
+.cc-bar-num{ font-family:var(--font-m); font-size:10.5px; color:var(--text-1); width:30px; text-align:right; }
+.cc-footer{ display:flex; justify-content:space-between; margin-top:14px; padding-top:12px; border-top:1px solid var(--panel-b); }
+.cc-score{ text-align:center; }
+.cc-score .n{ font-family:var(--font-d); font-weight:700; font-size:16px; }
+.cc-score .l{ font-family:var(--font-m); font-size:9.5px; color:var(--text-2); text-transform:uppercase; }
+.cc-est{ position:absolute; top:14px; right:14px; }
+.empty-state{ text-align:center; padding:50px 20px; color:var(--text-2); font-family:var(--font-m); font-size:13px; }
+
+/* ---------- HEALTH ANALYSIS ---------- */
+.health-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+@media (max-width:880px){ .health-grid{ grid-template-columns:1fr; } }
+.health-col-head{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.health-col-head .ico{ font-size:20px; }
+.health-col-head h3{ font-size:16px; }
+.health-item{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; padding:13px 0; border-bottom:1px solid var(--panel-b); }
+.health-item:last-child{ border-bottom:none; }
+.health-item .hi-text{ flex:1; }
+.health-item .hi-title{ font-weight:600; font-size:13.5px; margin-bottom:3px; }
+.health-item .hi-desc{ font-size:12.5px; color:var(--text-1); line-height:1.5; }
+.risk-badge{ font-family:var(--font-m); font-size:11px; font-weight:700; white-space:nowrap; padding:4px 9px; border-radius:7px; flex-shrink:0; margin-top:1px; }
+.risk-low{ background:rgba(61,220,132,.14); color:var(--good); }
+.risk-mod{ background:rgba(255,210,63,.14); color:var(--mod); }
+.risk-high{ background:rgba(255,82,82,.14); color:var(--vpoor); }
+
+/* ---------- REPORT CARD ---------- */
+.report-grid{ display:grid; grid-template-columns:1.1fr 1fr; gap:20px; }
+@media (max-width:880px){ .report-grid{ grid-template-columns:1fr; } }
+.score-ring-wrap{ display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+.ring{ position:relative; width:150px; height:150px; flex-shrink:0; }
+.ring svg{ transform:rotate(-90deg); width:100%; height:100%; }
+.ring-bg{ fill:none; stroke:rgba(255,255,255,.07); stroke-width:12; }
+.ring-fg{ fill:none; stroke-width:12; stroke-linecap:round; transition:stroke-dasharray 1s ease; }
+.ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.ring-center .rn{ font-family:var(--font-d); font-weight:700; font-size:30px; }
+.ring-center .rl{ font-family:var(--font-m); font-size:9px; color:var(--text-2); text-transform:uppercase; }
+.breakdown{ flex:1; min-width:200px; display:flex; flex-direction:column; gap:14px; }
+.bd-row .bd-top{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px; }
+.bd-row .bd-top b{ font-family:var(--font-m); }
+.bd-track{ height:8px; border-radius:5px; background:rgba(255,255,255,.06); overflow:hidden; }
+.bd-fill{ height:100%; border-radius:5px; transition:width 1s ease; }
+.grade-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:18px; }
+@media (max-width:520px){ .grade-grid{ grid-template-columns:repeat(2,1fr);} }
+.grade-cell{ text-align:center; background:var(--bg-2); border:1px solid var(--panel-b); border-radius:12px; padding:14px 8px; }
+.grade-cell .g-letter{ font-family:var(--font-d); font-size:28px; font-weight:700; }
+.grade-cell .g-label{ font-family:var(--font-m); font-size:10px; color:var(--text-2); text-transform:uppercase; margin-top:4px; }
+
+/* ---------- INSIGHTS ---------- */
+.insight-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+@media (max-width:900px){ .insight-grid{ grid-template-columns:1fr 1fr; } }
+@media (max-width:600px){ .insight-grid{ grid-template-columns:1fr; } }
+.insight-card{ background:var(--panel); border:1px solid var(--panel-b); border-radius:var(--radius-sm); padding:18px; }
+.insight-card h4{ font-size:13px; display:flex; align-items:center; gap:7px; margin-bottom:12px; color:var(--text-1); font-family:var(--font-m); text-transform:uppercase; letter-spacing:.05em; font-weight:600; }
+.insight-list{ list-style:none; display:flex; flex-direction:column; gap:9px; }
+.insight-list li{ display:flex; justify-content:space-between; font-size:13.5px; align-items:center; }
+.insight-list li .rank{ font-family:var(--font-m); color:var(--text-2); width:18px; }
+.insight-card.wide{ grid-column:1 / -1; }
+.insight-card p{ font-size:13.5px; color:var(--text-1); line-height:1.6; }
+.insight-card p b{ color:var(--text-0); }
+
+/* ---------- RECOMMENDATIONS TABS ---------- */
+.tab-bar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+.tab-btn{ font-family:var(--font-m); font-size:12px; font-weight:600; padding:9px 15px; border-radius:999px; background:var(--bg-2); border:1px solid var(--panel-b); color:var(--text-1); cursor:pointer; transition:.2s; }
+.tab-btn.active{ background:linear-gradient(135deg,var(--violet),#5b4fd6); color:#fff; border-color:transparent; }
+.tab-panel{ display:none; }
+.tab-panel.active{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+@media (max-width:700px){ .tab-panel.active{ grid-template-columns:1fr; } }
+.rec-item{ background:var(--bg-2); border:1px solid var(--panel-b); border-radius:12px; padding:14px 16px; font-size:13.5px; color:var(--text-1); display:flex; gap:10px; }
+.rec-item .rec-ico{ flex-shrink:0; }
+
+/* ---------- EXEC SUMMARY / FOOTER ---------- */
+.exec-box{ border-left:3px solid var(--teal); padding-left:18px; }
+.exec-box p{ color:var(--text-1); font-size:14.5px; line-height:1.75; margin-bottom:10px; }
+footer{ margin-top:40px; border-top:1px solid var(--panel-b); padding:30px 0 60px; }
+.foot-grid{ display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+.sources{ font-size:11.5px; color:var(--text-2); line-height:1.9; max-width:640px; }
+.sources b{ color:var(--text-1); }
+.disclaimer{ font-size:11px; color:var(--text-2); max-width:340px; }
+.share-btn{ font-family:var(--font-m); font-size:12.5px; font-weight:600; padding:11px 20px; border-radius:10px; background:linear-gradient(135deg,var(--teal),#1976d2); color:#04110f; border:none; cursor:pointer; display:flex; align-items:center; gap:8px; height:fit-content; }
+
+.fade-up{ animation:fadeUp .6s ease both; }
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(14px);} to{ opacity:1; transform:translateY(0);} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand"><span class="dot"></span> 🌍 Environmental Health Analyzer</div>
+    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+      <div class="updated-badge" id="updatedBadge">Loading data…</div>
+      <div class="loc-picker">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
+        <select id="citySelect" aria-label="Select city for personal analysis"></select>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- HERO -->
+  <section class="hero fade-up">
+    <div class="gauge-wrap">
+      <svg viewBox="0 0 200 200">
+        <circle class="gauge-bg" cx="100" cy="100" r="82"/>
+        <circle class="gauge-fg gauge-breathe" id="heroGauge" cx="100" cy="100" r="82"/>
+      </svg>
+      <div class="gauge-center">
+        <div class="gauge-num" id="heroAqiNum">--</div>
+        <div class="gauge-label">Live AQI Index</div>
+        <div class="gauge-cat" id="heroCat">--</div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="eyebrow" id="heroCityEyebrow">SELECTED LOCATION</div>
+      <h1 id="heroCityName">Loading city data<span>…</span></h1>
+      <p class="hero-sub" id="heroSummary">Analyzing the latest air and water quality readings for your selected location.</p>
+      <div class="hero-chips" id="heroChips"></div>
+    </div>
+  </section>
+
+  <!-- EXEC SUMMARY -->
+  <section class="fade-up">
+    <div class="panel exec-box">
+      <div class="eyebrow" style="margin-bottom:10px;">EXECUTIVE SUMMARY</div>
+      <p id="execSummary1"></p>
+      <p id="execSummary2"></p>
+    </div>
+  </section>
+
+  <!-- METRICS -->
+  <section>
+    <div class="sec-head"><h2>📊 Key Metrics</h2><p>National snapshot across every city in this analysis.</p></div>
+    <div class="metrics" id="metricsRow"></div>
+  </section>
+
+  <!-- FILTERS -->
+  <section style="padding-bottom:0;">
+    <div class="sec-head"><h2>🎛 Filters &amp; Controls</h2><p>Narrow the dataset — cards and charts below update live.</p></div>
+    <div class="panel filter-bar">
+      <div class="filter-group">
+        <label>Pollutant focus</label>
+        <select id="pollutantFilter">
+          <option value="aqi">AQI (Composite)</option>
+          <option value="pm25">PM2.5</option>
+          <option value="pm10">PM10</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Health-risk level</label>
+        <select id="riskFilter">
+          <option value="all">All risk levels</option>
+          <option value="low">🟢 Low risk</option>
+          <option value="mod">🟡 Moderate risk</option>
+          <option value="high">🔴 High risk</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>State / region</label>
+        <select id="stateFilter"><option value="all">All regions</option></select>
+      </div>
+      <div class="filter-group">
+        <label>AQI range · <span class="range-val" id="rangeValLabel">0–500</span></label>
+        <div class="range-row">
+          <input type="range" id="rangeMin" min="0" max="500" value="0">
+          <input type="range" id="rangeMax" min="0" max="500" value="500">
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Data snapshot</label>
+        <div style="display:flex; gap:6px;">
+          <button class="toggle-btn active" id="dateToday">Today</button>
+          <button class="toggle-btn" id="dateSeasonal">Seasonal avg (est.)</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Compare mode</label>
+        <button class="toggle-btn" id="compareToggle">⇄ Compare cities</button>
+      </div>
+      <button class="reset-link" id="resetFilters">Reset all</button>
+    </div>
+  </section>
+
+  <!-- CHARTS -->
+  <section>
+    <div class="sec-head"><h2>📈 Visualizations</h2><p>Comparative pollution levels across all analyzed cities.</p></div>
+    <div class="chart-grid">
+      <div class="panel chart-card"><h3>AQI Comparison</h3><div class="chart-note">Composite Air Quality Index by city (lower is cleaner)</div><canvas id="chartAqi"></canvas></div>
+      <div class="panel chart-card"><h3>PM2.5 Comparison</h3><div class="chart-note">Fine particulate matter (µg/m³ equivalent AQI)</div><canvas id="chartPm25"></canvas></div>
+      <div class="panel chart-card"><h3>PM10 Comparison</h3><div class="chart-note">Coarse particulate matter (dust, construction, pollen)</div><canvas id="chartPm10"></canvas></div>
+      <div class="panel chart-card"><h3>AQI Distribution</h3><div class="chart-note">Share of cities in each CPCB category</div><canvas id="chartDist"></canvas></div>
+      <div class="panel chart-card wide"><h3>City Ranking — Cleanest to Most Polluted</h3><div class="chart-note">Sorted by composite AQI, filtered dataset</div><canvas id="chartRank"></canvas></div>
+      <div class="panel chart-card wide"><h3>Typical Seasonal AQI Pattern</h3><div class="chart-note">Illustrative national pattern based on known CPCB seasonality (stubble-burning &amp; inversion in Oct–Jan, monsoon washout in Jul–Sep) — not a live time series</div><canvas id="chartSeason"></canvas></div>
+    </div>
+  </section>
+
+  <!-- CITY CARDS -->
+  <section>
+    <div class="sec-head"><h2>📋 City Detail Cards</h2><p>Click a card to run the personal health analysis below for that city.</p></div>
+    <div class="city-grid" id="cityGrid"></div>
+  </section>
+
+  <!-- COMPARE PANEL (hidden by default) -->
+  <section id="compareSection" style="display:none;">
+    <div class="sec-head"><h2>⇄ City Comparison</h2><p>Select up to 3 cities from the cards above (click while compare mode is on).</p></div>
+    <div class="panel" id="compareBody"><div class="empty-state">Select 2–3 cities above to compare side-by-side.</div></div>
+  </section>
+
+  <!-- AQI LEGEND -->
+  <section>
+    <div class="sec-head"><h2>🚦 AQI Categories (CPCB National Index)</h2></div>
+    <div class="panel" style="display:flex; flex-wrap:wrap; gap:10px;" id="legendRow"></div>
+  </section>
+
+  <!-- HEALTH ANALYSIS -->
+  <section id="healthSection">
+    <div class="sec-head"><h2>🫁 Environmental Health Analysis — <span id="healthCityName" style="color:var(--teal)">—</span></h2><p>How current conditions may affect the body, based on established air &amp; water quality health research.</p></div>
+    <div class="health-grid">
+      <div class="panel">
+        <div class="health-col-head"><span class="ico">🌬️</span><h3>Air Quality Impact</h3></div>
+        <div id="airHealthList"></div>
+      </div>
+      <div class="panel">
+        <div class="health-col-head"><span class="ico">💧</span><h3>Water Quality Impact</h3></div>
+        <div id="waterHealthList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- REPORT CARD -->
+  <section>
+    <div class="sec-head"><h2>🧾 Personal Environmental Report Card</h2><p>Composite scoring derived from live AQI and regional water-quality assessments.</p></div>
+    <div class="panel report-grid">
+      <div class="score-ring-wrap">
+        <div class="ring">
+          <svg viewBox="0 0 120 120">
+            <circle class="ring-bg" cx="60" cy="60" r="50"/>
+            <circle class="ring-fg" id="overallRing" cx="60" cy="60" r="50" stroke="var(--teal)"/>
+          </svg>
+          <div class="ring-center"><div class="rn" id="overallScoreNum">--</div><div class="rl">Overall Score</div></div>
+        </div>
+        <div class="breakdown">
+          <div class="bd-row"><div class="bd-top"><span>Air Quality Score</span><b id="airScoreNum">--</b></div><div class="bd-track"><div class="bd-fill" id="airScoreBar" style="background:var(--teal);"></div></div></div>
+          <div class="bd-row"><div class="bd-top"><span>Water Quality Score</span><b id="waterScoreNum">--</b></div><div class="bd-track"><div class="bd-fill" id="waterScoreBar" style="background:#4fa8ff;"></div></div></div>
+          <div class="bd-row"><div class="bd-top"><span>Overall Environmental Score</span><b id="overallScoreNum2">--</b></div><div class="bd-track"><div class="bd-fill" id="overallScoreBar" style="background:var(--violet);"></div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="eyebrow" style="margin-bottom:10px;">GRADE BREAKDOWN</div>
+        <div class="grade-grid">
+          <div class="grade-cell"><div class="g-letter" id="gradeAir">-</div><div class="g-label">Air Quality</div></div>
+          <div class="grade-cell"><div class="g-letter" id="gradeWater">-</div><div class="g-label">Water Quality</div></div>
+          <div class="grade-cell"><div class="g-letter" id="gradeHair">-</div><div class="g-label">Hair Risk</div></div>
+          <div class="grade-cell"><div class="g-letter" id="gradeSkin">-</div><div class="g-label">Skin Risk</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INSIGHTS -->
+  <section>
+    <div class="sec-head"><h2>💡 Insights Panel</h2></div>
+    <div class="insight-grid">
+      <div class="insight-card"><h4>🟢 Top 3 Cleanest Cities</h4><ul class="insight-list" id="topClean"></ul></div>
+      <div class="insight-card"><h4>🔴 Top 3 Most Polluted Cities</h4><ul class="insight-list" id="topPolluted"></ul></div>
+      <div class="insight-card"><h4>⚠️ Biggest Anomaly</h4><p id="anomalyText"></p></div>
+      <div class="insight-card wide"><h4>✨ Most Surprising Observation</h4><p id="surpriseText"></p></div>
+      <div class="insight-card wide"><h4>✅ Recommended Actions</h4><ul class="insight-list" id="recActions" style="flex-direction:column;"></ul></div>
+    </div>
+  </section>
+
+  <!-- RECOMMENDATIONS -->
+  <section>
+    <div class="sec-head"><h2>🌱 Personalized Recommendations — <span id="recCityName" style="color:var(--teal)">—</span></h2></div>
+    <div class="tab-bar" id="tabBar"></div>
+    <div id="tabPanels"></div>
+  </section>
+
+  <footer>
+    <div class="foot-grid">
+      <div class="sources" id="sourcesBox"></div>
+      <button class="share-btn" onclick="alert('Screenshot this dashboard to share your Environmental Health Report Card on LinkedIn 🌍')">📤 Share Report Card</button>
+    </div>
+    <div class="disclaimer" style="margin-top:18px;">This dashboard is for general educational and informational purposes only and is not medical advice. Consult a physician or dermatologist for personal health concerns. AQI figures are normalized to a CPCB-style 0–500 index for comparability across sources; some values are estimated where granular pollutant or station data was unavailable, and are flagged accordingly.</div>
+  </footer>
+
+</main>
+
+<script>
+/* =========================================================
+   DATA LAYER — sourced Aug 2, 2026 from aqicn.org (CPCB feed),
+   IQAir/AQI.in national dashboards, and CPCB/CGWB/BIS water
+   quality reporting. Missing granular pollutant readings are
+   interpolated from each city's composite AQI and flagged.
+   ========================================================= */
+const CITIES = [
+  { name:"Delhi", state:"Delhi NCR", aqi:117, pm25:117, pm10:49, water:35,
+    estimated:false, note:"CPCB Mandir Marg / R.K. Puram stations via aqicn.org" },
+  { name:"Ghaziabad", state:"Delhi NCR", aqi:213, pm25:166, pm10:213, water:38,
+    estimated:false, note:"CPCB Indirapuram station via aqicn.org" },
+  { name:"Jaipur", state:"Rajasthan", aqi:153, pm25:130, pm10:84, water:55,
+    estimated:true, note:"PM2.5/PM10 split estimated from composite AQI (station breakdown unavailable)" },
+  { name:"Lucknow", state:"Uttar Pradesh", aqi:144, pm25:125, pm10:78, water:48,
+    estimated:true, note:"PM2.5/PM10 split estimated from composite AQI (station breakdown unavailable)" },
+  { name:"Kanpur", state:"Uttar Pradesh", aqi:95, pm25:95, pm10:46, water:40,
+    estimated:false, note:"CPCB Nehru Nagar station via aqicn.org" },
+  { name:"Patna", state:"Bihar", aqi:140, pm25:140, pm10:73, water:50,
+    estimated:false, note:"CPCB Rajbansi Nagar station via aqicn.org" },
+  { name:"Kolkata", state:"West Bengal", aqi:90, pm25:80, pm10:55, water:58,
+    estimated:true, note:"PM2.5/PM10 split estimated from composite AQI (station breakdown unavailable)" },
+  { name:"Mumbai", state:"Maharashtra", aqi:85, pm25:70, pm10:60, water:82,
+    estimated:true, note:"Live sensor returned an error at retrieval time; value imputed from recent regional readings" },
+  { name:"Bengaluru", state:"Karnataka", aqi:79, pm25:65, pm10:45, water:68,
+    estimated:true, note:"PM2.5/PM10 split estimated from composite AQI (station breakdown unavailable)" },
+  { name:"Hyderabad", state:"Telangana", aqi:65, pm25:55, pm10:40, water:52,
+    estimated:true, note:"PM2.5/PM10 split estimated from composite AQI (station breakdown unavailable)" },
+  { name:"Chennai", state:"Tamil Nadu", aqi:76, pm25:62, pm10:48, water:60,
+    estimated:true, note:"PM2.5/PM10 split estimated from composite AQI (station breakdown unavailable)" },
+  { name:"Gandhinagar (GIFT City)", state:"Gujarat", aqi:188, pm25:100, pm10:188, water:65,
+    estimated:false, note:"CPCB GIFT City station via aqicn.org" },
+  { name:"Shillong", state:"Meghalaya", aqi:48, pm25:48, pm10:36, water:78,
+    estimated:false, note:"CPCB JN Stadium station via aqicn.org — consistently among India's cleanest" },
+  { name:"Kosi (Mathura region)", state:"Uttar Pradesh", aqi:128, pm25:118, pm10:68, water:42,
+    estimated:true, note:"No CPCB monitoring station in Kosi — interpolated from the nearest Delhi–Agra NCR corridor readings. Treat as low-confidence estimate; your current location" }
+];
+
+const CATEGORIES = [
+  { key:"good", label:"Good", min:0, max:50, color:"#3ddc84" },
+  { key:"sat", label:"Satisfactory", min:51, max:100, color:"#a8e063" },
+  { key:"mod", label:"Moderate", min:101, max:200, color:"#ffd23f" },
+  { key:"poor", label:"Poor", min:201, max:300, color:"#ff9142" },
+  { key:"vpoor", label:"Very Poor", min:301, max:400, color:"#ff5252" },
+  { key:"severe", label:"Severe", min:401, max:9999, color:"#c22b4d" }
+];
+
+function getCategory(aqi){ return CATEGORIES.find(c => aqi>=c.min && aqi<=c.max) || CATEGORIES[CATEGORIES.length-1]; }
+function airScore(aqi){ return Math.max(0, Math.min(100, Math.round(100 - aqi/3))); }
+function overallScore(a,w){ return Math.round(a*0.55 + w*0.45); }
+function grade(score){ if(score>=90) return "A"; if(score>=75) return "B"; if(score>=60) return "C"; if(score>=45) return "D"; return "F"; }
+function riskFromScore(score){ if(score>=70) return {key:"low", label:"🟢 Low", cls:"risk-low"}; if(score>=45) return {key:"mod", label:"🟡 Moderate", cls:"risk-mod"}; return {key:"high", label:"🔴 High", cls:"risk-high"}; }
+
+// enrich cities with computed fields
+CITIES.forEach(c=>{
+  c.category = getCategory(c.aqi);
+  c.airScoreVal = airScore(c.aqi);
+  c.overallScoreVal = overallScore(c.airScoreVal, c.water);
+  c.hairScore = Math.round(c.water*0.5 + c.airScoreVal*0.5);
+  c.skinScore = Math.round(c.water*0.55 + c.airScoreVal*0.45);
+  c.risk = riskFromScore(c.overallScoreVal);
+  c.pm10Ratio = +(c.pm10/c.pm25).toFixed(2);
+});
+
+let selectedCity = CITIES.find(c=>c.name.startsWith("Kosi")) || CITIES[0];
+let compareMode = false;
+let compareList = [];
+let activeFilters = { pollutant:"aqi", risk:"all", state:"all", min:0, max:500 };
+let charts = {};
+
+/* ---------------- INIT ---------------- */
+function init(){
+  document.getElementById("updatedBadge").textContent = "Data snapshot · Aug 2, 2026";
+  populateCitySelect();
+  populateStateFilter();
+  buildLegend();
+  bindControls();
+  renderAll();
+}
+
+function populateCitySelect(){
+  const sel = document.getElementById("citySelect");
+  sel.innerHTML = CITIES.map(c=>`<option value="${c.name}">${c.name}</option>`).join("");
+  sel.value = selectedCity.name;
+  sel.addEventListener("change", e=>{
+    selectedCity = CITIES.find(c=>c.name===e.target.value);
+    renderPersonal();
+  });
+}
+function populateStateFilter(){
+  const states = [...new Set(CITIES.map(c=>c.state))].sort();
+  const sel = document.getElementById("stateFilter");
+  sel.innerHTML += states.map(s=>`<option value="${s}">${s}</option>`).join("");
+}
+function buildLegend(){
+  document.getElementById("legendRow").innerHTML = CATEGORIES.map(c=>`
+    <div class="chip" style="border-color:${c.color}55;">
+      <span style="width:9px;height:9px;border-radius:50%;background:${c.color};display:inline-block;"></span>
+      <b>${c.label}</b> <span style="color:var(--text-2)">(${c.min}–${c.max===9999?'500+':c.max})</span>
+    </div>`).join("");
+}
+
+function bindControls(){
+  document.getElementById("pollutantFilter").addEventListener("change", e=>{ activeFilters.pollutant=e.target.value; renderAll(); });
+  document.getElementById("riskFilter").addEventListener("change", e=>{ activeFilters.risk=e.target.value; renderAll(); });
+  document.getElementById("stateFilter").addEventListener("change", e=>{ activeFilters.state=e.target.value; renderAll(); });
+  const rMin = document.getElementById("rangeMin"), rMax = document.getElementById("rangeMax");
+  function syncRange(){
+    let mn=+rMin.value, mx=+rMax.value;
+    if(mn>mx){ [mn,mx]=[mx,mn]; }
+    activeFilters.min=mn; activeFilters.max=mx;
+    document.getElementById("rangeValLabel").textContent = `${mn}–${mx}`;
+    renderAll();
+  }
+  rMin.addEventListener("input", syncRange); rMax.addEventListener("input", syncRange);
+
+  document.getElementById("dateToday").addEventListener("click", ()=>toggleDateMode(true));
+  document.getElementById("dateSeasonal").addEventListener("click", ()=>toggleDateMode(false));
+
+  document.getElementById("compareToggle").addEventListener("click", e=>{
+    compareMode = !compareMode;
+    e.target.classList.toggle("active", compareMode);
+    document.getElementById("compareSection").style.display = compareMode ? "block" : "none";
+    if(compareMode){ compareList=[]; renderCompare(); }
+  });
+
+  document.getElementById("resetFilters").addEventListener("click", ()=>{
+    activeFilters = { pollutant:"aqi", risk:"all", state:"all", min:0, max:500 };
+    document.getElementById("pollutantFilter").value="aqi";
+    document.getElementById("riskFilter").value="all";
+    document.getElementById("stateFilter").value="all";
+    rMin.value=0; rMax.value=500;
+    document.getElementById("rangeValLabel").textContent="0–500";
+    renderAll();
+  });
+}
+
+let seasonalMode = false;
+function toggleDateMode(today){
+  seasonalMode = !today;
+  document.getElementById("dateToday").classList.toggle("active", today);
+  document.getElementById("dateSeasonal").classList.toggle("active", !today);
+  renderCityGrid(); renderCharts();
+}
+function seasonalAdj(aqi){ return seasonalMode ? Math.round(aqi*1.28) : aqi; } // illustrative winter-season uplift
+
+function filteredCities(){
+  return CITIES.filter(c=>{
+    const v = seasonalAdj(c.aqi);
+    if(v < activeFilters.min || v > activeFilters.max) return false;
+    if(activeFilters.risk!=="all" && c.risk.key!==activeFilters.risk) return false;
+    if(activeFilters.state!=="all" && c.state!==activeFilters.state) return false;
+    return true;
+  });
+}
+
+/* ---------------- RENDER ALL ---------------- */
+function renderAll(){
+  renderMetrics();
+  renderCityGrid();
+  renderCharts();
+  renderInsights();
+  renderPersonal();
+  renderSources();
+}
+
+/* ---------------- METRICS ---------------- */
+function renderMetrics(){
+  const list = CITIES;
+  const avg = Math.round(list.reduce((s,c)=>s+c.aqi,0)/list.length);
+  const highest = list.reduce((a,b)=> b.aqi>a.aqi?b:a);
+  const lowest = list.reduce((a,b)=> b.aqi<a.aqi?b:a);
+  const healthAvg = Math.round(list.reduce((s,c)=>s+c.overallScoreVal,0)/list.length);
+  const cards = [
+    { icon:"🌫️", label:"Average AQI (all cities)", val:avg, sub:getCategory(avg).label, color:getCategory(avg).color },
+    { icon:"🔴", label:"Highest AQI City", val:highest.aqi, sub:highest.name, color:"var(--vpoor)" },
+    { icon:"🟢", label:"Lowest AQI City", val:lowest.aqi, sub:lowest.name, color:"var(--good)" },
+    { icon:"🏙️", label:"Cities Analyzed", val:list.length, sub:"live + estimated readings", color:"var(--teal)" },
+    { icon:"❤️", label:"Avg Environmental Health Score", val:healthAvg+"/100", sub:grade(healthAvg)+" grade nationally", color:"var(--violet)" }
+  ];
+  document.getElementById("metricsRow").innerHTML = cards.map(c=>`
+    <div class="metric-card">
+      <div class="m-icon">${c.icon}</div>
+      <div class="m-val" style="color:${c.color}">${c.val}</div>
+      <div class="m-label">${c.label}</div>
+      <div class="m-sub">${c.sub}</div>
+    </div>`).join("");
+}
+
+/* ---------------- CITY CARDS ---------------- */
+function renderCityGrid(){
+  const cities = filteredCities();
+  const grid = document.getElementById("cityGrid");
+  if(!cities.length){ grid.innerHTML = `<div class="empty-state">No cities match the current filters. Try widening the AQI range.</div>`; return; }
+  grid.innerHTML = cities.map(c=>{
+    const aqi = seasonalAdj(c.aqi);
+    const cat = getCategory(aqi);
+    const isSel = c.name===selectedCity.name;
+    const inCompare = compareList.includes(c.name);
+    return `
+    <div class="city-card ${isSel && !compareMode ? 'selected':''} ${inCompare?'selected':''}" data-city="${c.name}">
+      ${c.estimated ? `<span class="cc-est data-flag" title="${c.note}">EST.</span>`:""}
+      <div class="cc-top">
+        <div><div class="cc-name">${c.name}</div><div class="cc-state">${c.state}</div></div>
+        <div class="cc-badge" style="background:${cat.color}22; color:${cat.color}; border:1px solid ${cat.color}55;">${cat.label}</div>
+      </div>
+      <div class="cc-aqi" style="color:${cat.color}">${aqi}</div>
+      <div class="cc-aqi-label">Composite AQI</div>
+      <div class="cc-bars">
+        <div class="cc-bar-row"><span>PM2.5</span><div class="cc-bar-track"><div class="cc-bar-fill" style="width:${Math.min(100,c.pm25/3)}%; background:var(--coral);"></div></div><span class="cc-bar-num">${c.pm25}</span></div>
+        <div class="cc-bar-row"><span>PM10</span><div class="cc-bar-track"><div class="cc-bar-fill" style="width:${Math.min(100,c.pm10/3)}%; background:var(--amber);"></div></div><span class="cc-bar-num">${c.pm10}</span></div>
+      </div>
+      <div class="cc-footer">
+        <div class="cc-score"><div class="n">${c.overallScoreVal}</div><div class="l">Health Score</div></div>
+        <div class="cc-score"><div class="n">${c.water}</div><div class="l">Water Score</div></div>
+        <div class="cc-score"><div class="n">${c.risk.label.split(' ')[0]}</div><div class="l">${c.risk.key} risk</div></div>
+      </div>
+    </div>`;
+  }).join("");
+
+  grid.querySelectorAll(".city-card").forEach(card=>{
+    card.addEventListener("click", ()=>{
+      const name = card.getAttribute("data-city");
+      if(compareMode){
+        if(compareList.includes(name)) compareList = compareList.filter(n=>n!==name);
+        else if(compareList.length<3) compareList.push(name);
+        renderCityGrid(); renderCompare();
+      } else {
+        selectedCity = CITIES.find(c=>c.name===name);
+        document.getElementById("citySelect").value = name;
+        renderCityGrid(); renderPersonal();
+        document.getElementById("healthSection").scrollIntoView({behavior:"smooth", block:"start"});
+      }
+    });
+  });
+}
+
+/* ---------------- COMPARE ---------------- */
+function renderCompare(){
+  const body = document.getElementById("compareBody");
+  if(compareList.length<2){ body.innerHTML = `<div class="empty-state">Select 2–3 cities above to compare side-by-side.</div>`; return; }
+  const cities = compareList.map(n=>CITIES.find(c=>c.name===n));
+  body.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:13.5px;">
+    <thead><tr>${["Metric",...cities.map(c=>c.name)].map(h=>`<th style="text-align:left; padding:10px 14px; border-bottom:1px solid var(--panel-b); color:var(--text-2); font-family:var(--font-m); font-size:11px; text-transform:uppercase;">${h}</th>`).join("")}</tr></thead>
+    <tbody>
+      ${["AQI","PM2.5","PM10","Water Score","Health Score","Category","Risk"].map(metric=>`
+        <tr>
+          <td style="padding:10px 14px; border-bottom:1px solid var(--panel-b); color:var(--text-1); font-weight:600;">${metric}</td>
+          ${cities.map(c=>{
+            let v;
+            if(metric==="AQI") v=c.aqi; else if(metric==="PM2.5") v=c.pm25; else if(metric==="PM10") v=c.pm10;
+            else if(metric==="Water Score") v=c.water; else if(metric==="Health Score") v=c.overallScoreVal;
+            else if(metric==="Category") v=`<span style="color:${c.category.color}">${c.category.label}</span>`;
+            else v=c.risk.label;
+            return `<td style="padding:10px 14px; border-bottom:1px solid var(--panel-b);">${v}</td>`;
+          }).join("")}
+        </tr>`).join("")}
+    </tbody>
+  </table></div>`;
+}
+
+/* ---------------- CHARTS ---------------- */
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); } }
+function chartColors(cities){ return cities.map(c=>getCategory(seasonalAdj(c.aqi)).color); }
+
+function renderCharts(){
+  const cities = filteredCities().slice().sort((a,b)=>a.aqi-b.aqi);
+  const labels = cities.map(c=>c.name.split(" (")[0]);
+  const gridColor = "rgba(255,255,255,.06)";
+  const tickColor = "#8494a5";
+  const baseOpts = (yLabel)=>({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{ backgroundColor:"#0f1620", borderColor:"rgba(255,255,255,.1)", borderWidth:1, titleFont:{family:"Space Grotesk"}, bodyFont:{family:"JetBrains Mono", size:11} } },
+    scales:{ x:{ ticks:{color:tickColor, font:{size:10.5}}, grid:{color:gridColor} }, y:{ ticks:{color:tickColor, font:{size:10.5}}, grid:{color:gridColor}, title:{display:!!yLabel,text:yLabel,color:tickColor,font:{size:10}} } }
+  });
+
+  destroyChart("aqi");
+  charts.aqi = new Chart(document.getElementById("chartAqi"), { type:"bar", data:{ labels, datasets:[{ data:cities.map(c=>seasonalAdj(c.aqi)), backgroundColor:chartColors(cities), borderRadius:6, maxBarThickness:28 }] }, options: baseOpts("AQI") });
+
+  destroyChart("pm25");
+  charts.pm25 = new Chart(document.getElementById("chartPm25"), { type:"bar", data:{ labels, datasets:[{ data:cities.map(c=>c.pm25), backgroundColor:"#ff6b4a", borderRadius:6, maxBarThickness:28 }] }, options: baseOpts("PM2.5 AQI") });
+
+  destroyChart("pm10");
+  charts.pm10 = new Chart(document.getElementById("chartPm10"), { type:"bar", data:{ labels, datasets:[{ data:cities.map(c=>c.pm10), backgroundColor:"#ffc857", borderRadius:6, maxBarThickness:28 }] }, options: baseOpts("PM10 AQI") });
+
+  // distribution donut
+  const distCounts = CATEGORIES.map(cat=> filteredCities().filter(c=>getCategory(seasonalAdj(c.aqi)).key===cat.key).length );
+  destroyChart("dist");
+  charts.dist = new Chart(document.getElementById("chartDist"), { type:"doughnut",
+    data:{ labels:CATEGORIES.map(c=>c.label), datasets:[{ data:distCounts, backgroundColor:CATEGORIES.map(c=>c.color), borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{ legend:{ position:"bottom", labels:{ color:"#a9b8c9", font:{size:10.5, family:"Inter"}, boxWidth:10, padding:10 } } } } });
+
+  // ranking horizontal
+  const rankSorted = filteredCities().slice().sort((a,b)=>seasonalAdj(a.aqi)-seasonalAdj(b.aqi));
+  destroyChart("rank");
+  charts.rank = new Chart(document.getElementById("chartRank"), { type:"bar",
+    data:{ labels:rankSorted.map(c=>c.name.split(" (")[0]), datasets:[{ data:rankSorted.map(c=>seasonalAdj(c.aqi)), backgroundColor:chartColors(rankSorted), borderRadius:6 }] },
+    options:{ indexAxis:"y", responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:baseOpts().plugins.tooltip}, scales:{ x:{ ticks:{color:tickColor}, grid:{color:gridColor} }, y:{ ticks:{color:tickColor, font:{size:11}}, grid:{display:false} } } } });
+
+  // seasonal pattern (illustrative, using selected city's baseline scaled by known India monthly pollution curve)
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const seasonCurve = [1.55,1.35,1.05,0.95,0.9,0.75,0.55,0.5,0.65,1.1,1.6,1.7]; // relative multiplier vs annual mean
+  const baseline = selectedCity.aqi / (seasonCurve.reduce((a,b)=>a+b,0)/12);
+  destroyChart("season");
+  charts.season = new Chart(document.getElementById("chartSeason"), { type:"line",
+    data:{ labels:months, datasets:[{ label:selectedCity.name, data:seasonCurve.map(m=>Math.round(baseline*m)), borderColor:"#2dd4c8", backgroundColor:"rgba(45,212,200,.12)", fill:true, tension:.4, pointRadius:3, pointBackgroundColor:"#2dd4c8" }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:baseOpts().plugins.tooltip }, scales:{ x:{ ticks:{color:tickColor}, grid:{display:false} }, y:{ ticks:{color:tickColor}, grid:{color:gridColor} } } } });
+}
+
+/* ---------------- INSIGHTS ---------------- */
+function renderInsights(){
+  const sorted = CITIES.slice().sort((a,b)=>a.aqi-b.aqi);
+  const clean3 = sorted.slice(0,3), poll3 = sorted.slice(-3).reverse();
+  document.getElementById("topClean").innerHTML = clean3.map((c,i)=>`<li><span><span class="rank">${i+1}</span>${c.name}</span><b style="color:${c.category.color}">${c.aqi}</b></li>`).join("");
+  document.getElementById("topPolluted").innerHTML = poll3.map((c,i)=>`<li><span><span class="rank">${i+1}</span>${c.name}</span><b style="color:${c.category.color}">${c.aqi}</b></li>`).join("");
+
+  // anomaly: highest PM10/PM2.5 ratio = dust-dominant profile vs typical combustion profile
+  const anomalyCity = CITIES.slice().sort((a,b)=>b.pm10Ratio-a.pm10Ratio)[0];
+  document.getElementById("anomalyText").innerHTML = `<b>${anomalyCity.name}</b> shows a PM10:PM2.5 ratio of <b>${anomalyCity.pm10Ratio}</b> — far higher than the typical combustion-dominant profile seen in Delhi or Patna. This points to dust, construction, or road-resuspension as the primary driver rather than vehicle/industrial smoke, meaning outdoor masking and surface dust control matter more than indoor purifiers alone here.`;
+
+  const dirtiest = sorted[sorted.length-1], cleanest = sorted[0];
+  const gapPct = Math.round((cleanest.aqi/dirtiest.aqi)*100);
+  document.getElementById("surpriseText").innerHTML = `<b>${cleanest.name}'s</b> air is only <b>${gapPct}%</b> as polluted as <b>${dirtiest.name}'s</b> — a gap that has little to do with wealth or infrastructure and almost everything to do with altitude, rainfall, and green cover. Meanwhile, <b>your selected region (Kosi, UP)</b> has no dedicated CPCB monitoring station at all, despite sitting inside the heavily-monitored Delhi–Agra pollution corridor — a data gap that likely affects millions of residents in smaller towns across North India, not just this one location.`;
+
+  document.getElementById("recActions").innerHTML = [
+    "Track your city's AQI daily during Oct–Jan when regional levels typically spike 40–70%.",
+    "Prioritize N95/FFP2 masks outdoors once AQI crosses 150 (Moderate–Poor boundary).",
+    "Install a basic TDS/filter test for tap water in cities scoring below 50 on the water index.",
+    "Advocate for a CPCB monitoring station if you live in an unmonitored town like Kosi."
+  ].map(t=>`<li style="justify-content:flex-start; gap:10px;"><span>✅</span><span>${t}</span></li>`).join("");
+}
+
+/* ---------------- PERSONAL: HEALTH + REPORT CARD + RECS ---------------- */
+function renderPersonal(){
+  const c = selectedCity;
+  renderHero(c);
+  renderExec();
+  renderHealthAnalysis(c);
+  renderReportCard(c);
+  renderRecommendations(c);
+  document.getElementById("healthCityName").textContent = c.name;
+  document.getElementById("recCityName").textContent = c.name;
+}
+
+function renderHero(c){
+  const cat = c.category;
+  const circumference = 2*Math.PI*82;
+  const pct = Math.min(1, c.aqi/500);
+  const gaugeEl = document.getElementById("heroGauge");
+  gaugeEl.style.stroke = cat.color; gaugeEl.style.color = cat.color;
+  gaugeEl.setAttribute("stroke-dasharray", `${circumference*pct} ${circumference}`);
+  document.getElementById("heroAqiNum").textContent = c.aqi;
+  document.getElementById("heroAqiNum").style.color = cat.color;
+  const catEl = document.getElementById("heroCat");
+  catEl.textContent = cat.label; catEl.style.background = cat.color+"22"; catEl.style.color = cat.color; catEl.style.border = `1px solid ${cat.color}55`;
+  document.getElementById("heroCityEyebrow").textContent = c.state.toUpperCase();
+  document.getElementById("heroCityName").innerHTML = `${c.name} <span>Environmental Snapshot</span>`;
+  document.getElementById("heroSummary").textContent = `Composite AQI reads ${c.aqi} (${cat.label}) with a water quality score of ${c.water}/100. Overall environmental health score: ${c.overallScoreVal}/100 (${grade(c.overallScoreVal)}).${c.estimated? " Some figures for this city are estimated — see data note below.":""}`;
+  document.getElementById("heroChips").innerHTML = `
+    <div class="chip">PM2.5 <b>${c.pm25}</b></div>
+    <div class="chip">PM10 <b>${c.pm10}</b></div>
+    <div class="chip">Water Score <b>${c.water}/100</b></div>
+    <div class="chip">${c.risk.label} overall risk</div>
+    ${c.estimated? `<div class="chip data-flag">ESTIMATED DATA · ${c.note}</div>`:""}
+  `;
+}
+
+function renderExec(){
+  const sorted = CITIES.slice().sort((a,b)=>a.aqi-b.aqi);
+  const avg = Math.round(CITIES.reduce((s,c)=>s+c.aqi,0)/CITIES.length);
+  document.getElementById("execSummary1").innerHTML = `Across <b>${CITIES.length} Indian cities</b> analyzed on Aug 2, 2026, the average composite AQI is <b>${avg}</b> (${getCategory(avg).label}). <b>${sorted[0].name}</b> posts the cleanest air at AQI ${sorted[0].aqi}, while <b>${sorted[sorted.length-1].name}</b> is the most polluted at AQI ${sorted[sorted.length-1].aqi} — a nearly ${Math.round(sorted[sorted.length-1].aqi/sorted[0].aqi)}x gap between the two.`;
+  document.getElementById("execSummary2").innerHTML = `For your selected location, <b>${selectedCity.name}</b>, current conditions fall in the <b>${selectedCity.category.label}</b> band with an overall environmental health score of <b>${selectedCity.overallScoreVal}/100</b>. Water quality — assessed from CPCB, CGWB and BIS reporting rather than a live sensor — scores <b>${selectedCity.water}/100</b>. Scroll down for a full personal health breakdown and recommended actions.`;
+}
+
+const AIR_FACTORS = [
+  { key:"lungs", title:"Lungs & Respiratory System", icon:"🫁" },
+  { key:"sleep", title:"Sleep Quality", icon:"😴" },
+  { key:"energy", title:"Energy Levels", icon:"⚡" },
+  { key:"exercise", title:"Exercise Performance", icon:"🏃" },
+  { key:"longterm", title:"Long-Term Health Risk", icon:"⏳" }
+];
+const WATER_FACTORS = [
+  { key:"hairfall", title:"Hair Fall", icon:"🪮" },
+  { key:"hairdry", title:"Hair Dryness", icon:"💇" },
+  { key:"scalp", title:"Scalp Health", icon:"🧴" },
+  { key:"skindry", title:"Skin Dryness", icon:"🫧" },
+  { key:"acne", title:"Acne & Breakouts", icon:"😖" },
+  { key:"sensitive", title:"Skin Sensitivity", icon:"🌸" }
+];
+
+function tierFromScore(score){ return score>=70 ? "good" : score>=45 ? "mod" : "poor"; }
+
+const AIR_COPY = {
+  lungs:{ good:"Air is clean enough that healthy lungs face minimal irritation — a good day for deep breathing outdoors.", mod:"Fine particles can irritate airways with prolonged exposure; sensitive groups (asthma, allergies, kids, elderly) may notice mild coughing or throat irritation.", poor:"Particulate levels are high enough to inflame airway linings and reduce lung function within hours, especially with outdoor exertion." },
+  sleep:{ good:"Indoor air quality at this level rarely disrupts sleep; ventilate normally.", mod:"Airborne particles can settle indoors and mildly affect breathing overnight, especially with windows open near traffic.", poor:"High outdoor pollution filtering indoors is linked to disrupted sleep cycles, nasal congestion, and reduced sleep quality." },
+  energy:{ good:"Oxygen uptake is unimpeded — no pollution-related fatigue expected.", mod:"Mild reductions in blood oxygenation from inhaled particulates can contribute to subtle daytime tiredness.", poor:"Chronic exposure at this level is associated with fatigue, brain fog, and reduced daytime alertness." },
+  exercise:{ good:"Ideal conditions for outdoor cardio, running, or cycling.", mod:"Outdoor exercise is still fine for most people, but consider shifting high-intensity workouts indoors if you're sensitive.", poor:"Outdoor exertion sharply increases particulate inhalation — shift workouts indoors or to early morning hours when levels typically dip." },
+  longterm:{ good:"Sustained exposure at this level carries minimal added long-term cardiovascular or respiratory risk.", mod:"Years of exposure at this level are associated with modestly elevated risk of respiratory conditions and cardiovascular strain.", poor:"Long-term exposure at this level is strongly associated with elevated risk of chronic respiratory disease, cardiovascular disease, and reduced life expectancy per WHO/CPCB research." }
+};
+const WATER_COPY = {
+  hairfall:{ good:"Low mineral/contaminant load means minimal water-related hair shedding.", mod:"Moderate hardness or chlorination can gradually weaken hair shafts and contribute to increased shedding.", poor:"High contaminant or hardness levels are commonly linked to accelerated hair fall and breakage with regular use." },
+  hairdry:{ good:"Water mineral content is unlikely to strip natural hair oils.", mod:"Harder water can leave mineral deposits that dull hair and make it feel drier over time.", poor:"High mineral/chlorine content strips natural oils rapidly, leaving hair persistently dry and brittle." },
+  scalp:{ good:"Low contamination supports a balanced, healthy scalp microbiome.", mod:"Residue buildup from moderately hard water can cause mild flaking or itchiness over time.", poor:"Contaminants and hardness at this level are associated with scalp irritation, dandruff, and clogged follicles." },
+  skindry:{ good:"Water quality here is unlikely to disrupt the skin's natural moisture barrier.", mod:"Moderate mineral content can gradually dry out skin, especially on the face and hands.", poor:"High hardness/contaminant levels frequently strip the skin barrier, causing persistent dryness and flaking." },
+  acne:{ good:"Low contaminant load; water is an unlikely contributor to breakouts.", mod:"Trace heavy metals or chlorine byproducts can clog pores in acne-prone skin.", poor:"Elevated contaminant levels are a recognized contributor to clogged pores and breakouts in sensitive individuals." },
+  sensitive:{ good:"Minimal risk of water-triggered sensitivity or reactions.", mod:"Sensitive skin types may notice mild redness or tightness after washing.", poor:"High contaminant/hardness levels commonly trigger redness, tightness, and reactive flare-ups in sensitive skin." }
+};
+
+function renderHealthAnalysis(c){
+  const airTier = tierFromScore(c.airScoreVal);
+  const waterTier = tierFromScore(c.water);
+  document.getElementById("airHealthList").innerHTML = AIR_FACTORS.map(f=>{
+    const risk = airTier==="good"?{cls:"risk-low",label:"🟢 Low"}:airTier==="mod"?{cls:"risk-mod",label:"🟡 Moderate"}:{cls:"risk-high",label:"🔴 High"};
+    return `<div class="health-item"><div class="hi-text"><div class="hi-title">${f.icon} ${f.title}</div><div class="hi-desc">${AIR_COPY[f.key][airTier]}</div></div><div class="risk-badge ${risk.cls}">${risk.label}</div></div>`;
+  }).join("");
+  document.getElementById("waterHealthList").innerHTML = WATER_FACTORS.map(f=>{
+    const risk = waterTier==="good"?{cls:"risk-low",label:"🟢 Low"}:waterTier==="mod"?{cls:"risk-mod",label:"🟡 Moderate"}:{cls:"risk-high",label:"🔴 High"};
+    return `<div class="health-item"><div class="hi-text"><div class="hi-title">${f.icon} ${f.title}</div><div class="hi-desc">${WATER_COPY[f.key][waterTier]}</div></div><div class="risk-badge ${risk.cls}">${risk.label}</div></div>`;
+  }).join("");
+}
+
+function renderReportCard(c){
+  const circumference = 2*Math.PI*50;
+  const ringColor = c.overallScoreVal>=75?"#3ddc84":c.overallScoreVal>=45?"#ffc857":"#ff5252";
+  const ring = document.getElementById("overallRing");
+  ring.style.stroke = ringColor;
+  ring.setAttribute("stroke-dasharray", `${circumference*(c.overallScoreVal/100)} ${circumference}`);
+  document.getElementById("overallScoreNum").textContent = c.overallScoreVal;
+  document.getElementById("overallScoreNum2").textContent = c.overallScoreVal+"/100";
+  document.getElementById("airScoreNum").textContent = c.airScoreVal+"/100";
+  document.getElementById("waterScoreNum").textContent = c.water+"/100";
+  document.getElementById("airScoreBar").style.width = c.airScoreVal+"%";
+  document.getElementById("waterScoreBar").style.width = c.water+"%";
+  document.getElementById("overallScoreBar").style.width = c.overallScoreVal+"%";
+  document.getElementById("gradeAir").textContent = grade(c.airScoreVal);
+  document.getElementById("gradeWater").textContent = grade(c.water);
+  document.getElementById("gradeHair").textContent = grade(c.hairScore);
+  document.getElementById("gradeSkin").textContent = grade(c.skinScore);
+  [["gradeAir",c.airScoreVal],["gradeWater",c.water],["gradeHair",c.hairScore],["gradeSkin",c.skinScore]].forEach(([id,score])=>{
+    document.getElementById(id).style.color = score>=75?"#3ddc84":score>=45?"#ffc857":"#ff5252";
+  });
+}
+
+const REC_TABS = [
+  { key:"daily", label:"Daily Actions", icon:"☀️" },
+  { key:"indoor", label:"Indoor Air", icon:"🏠" },
+  { key:"outdoor", label:"Outdoor Activity", icon:"🏃" },
+  { key:"hair", label:"Hair Care", icon:"💇" },
+  { key:"skin", label:"Skin Care", icon:"🧴" },
+  { key:"water", label:"Water Quality", icon:"💧" }
+];
+
+function recsFor(c){
+  const airTier = tierFromScore(c.airScoreVal), waterTier = tierFromScore(c.water);
+  const daily = airTier==="poor"
+    ? ["Check live AQI before stepping out — avoid peak traffic hours (8–10am, 6–9pm).","Wear an N95/FFP2 mask outdoors, especially near traffic corridors.","Keep windows closed during early morning smog hours; ventilate midday instead.","Rinse face and hands after extended outdoor exposure."]
+    : airTier==="mod"
+    ? ["Glance at AQI once a day — plan outdoor errands for cleaner mid-morning hours.","Sensitive groups (kids, elderly, asthma) should carry a mask as a precaution.","Ventilate your home for 20–30 minutes during the cleanest part of the day."]
+    : ["Enjoy normal outdoor routines — air quality poses minimal daily risk.","Still worth a quick AQI check during winter months when levels can spike.","Open windows freely to keep indoor air fresh."];
+
+  const indoor = airTier==="poor"
+    ? ["Run a HEPA air purifier in bedrooms and living areas, especially overnight.","Add indoor plants (snake plant, peace lily) as a minor supplemental filter.","Avoid indoor combustion — candles, incense, and stovetop smoke add to particulate load.","Change AC/purifier filters more frequently during high-AQI months."]
+    : airTier==="mod"
+    ? ["Consider a mid-range air purifier for bedrooms if you have respiratory sensitivity.","Vacuum with a HEPA-filter vacuum weekly to reduce settled dust.","Keep humidity between 40–60% to help airways cope with particulate load."]
+    : ["No purifier strictly necessary — basic dusting and ventilation are enough.","Keep an eye on winter spikes when even clean cities can dip into Moderate."];
+
+  const outdoor = airTier==="poor"
+    ? ["Move workouts indoors or to a gym with filtered air when AQI exceeds 150.","If you must exercise outside, choose early morning before traffic builds up.","Shorten high-intensity outdoor sessions — deep breathing increases particulate intake 2–3x."]
+    : airTier==="mod"
+    ? ["Light-to-moderate outdoor exercise is fine; save high-intensity intervals for cleaner days.","Avoid exercising directly next to busy roads or construction sites."]
+    : ["Great conditions for running, cycling, or any outdoor sport — minimal air-quality restriction.","Still sensible to check AQI before long endurance sessions in peak winter."];
+
+  const hair = waterTier==="poor"
+    ? ["Install a shower filter to reduce chlorine/hardness before it reaches your scalp.","Use a sulfate-free, chelating shampoo weekly to strip mineral buildup.","Follow up hard-water washes with a deep-conditioning hair mask.","Consider a final rinse with filtered or bottled water on wash days."]
+    : waterTier==="mod"
+    ? ["A basic shower filter head can meaningfully reduce mineral buildup.","Use a clarifying shampoo every 2–3 weeks to prevent residue accumulation."]
+    : ["No special filtration needed — maintain normal hair-care routine."];
+
+  const skin = waterTier==="poor"
+    ? ["Apply a barrier-repair moisturizer (ceramides, glycerin) immediately after washing.","Avoid over-cleansing — stick to gentle, fragrance-free cleansers.","Patch-test new products; sensitized skin from hard water reacts more easily.","Consider a point-of-use water softener for the bathroom tap if breakouts persist."]
+    : waterTier==="mod"
+    ? ["A lightweight daily moisturizer helps offset mild mineral dryness.","Avoid harsh exfoliants that compound water-related dryness."]
+    : ["Standard skincare routine is fine — water is an unlikely irritant here."];
+
+  const water = waterTier==="poor"
+    ? ["Use a certified RO+UV purifier for drinking water — don't rely on boiling alone for chemical contaminants.","Get your tap water tested annually for fluoride, nitrate, and heavy metals (common in this region).","Report visible discoloration or odor to your local municipal water board.","Avoid using untreated tap water for infant formula or open wounds."]
+    : waterTier==="mod"
+    ? ["A basic carbon or RO filter is a worthwhile upgrade for drinking water.","Periodic TDS testing (inexpensive, at-home) helps track changes over time."]
+    : ["Municipal supply tests favorably — standard filtration is sufficient for most households."];
+
+  return { daily, indoor, outdoor, hair, skin, water };
+}
+
+function renderRecommendations(c){
+  const recs = recsFor(c);
+  const tabBar = document.getElementById("tabBar");
+  tabBar.innerHTML = REC_TABS.map((t,i)=>`<button class="tab-btn ${i===0?'active':''}" data-tab="${t.key}">${t.icon} ${t.label}</button>`).join("");
+  const panels = document.getElementById("tabPanels");
+  panels.innerHTML = REC_TABS.map((t,i)=>`
+    <div class="tab-panel ${i===0?'active':''}" id="panel-${t.key}">
+      ${recs[t.key].map(item=>`<div class="rec-item"><span class="rec-ico">${t.icon}</span><span>${item}</span></div>`).join("")}
+    </div>`).join("");
+  tabBar.querySelectorAll(".tab-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      tabBar.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+      panels.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+      btn.classList.add("active");
+      document.getElementById("panel-"+btn.dataset.tab).classList.add("active");
+    });
+  });
+}
+
+function renderSources(){
+  document.getElementById("sourcesBox").innerHTML = `
+    <b>Data sources</b> — Air quality: aqicn.org / World Air Quality Index Project (CPCB station feeds, retrieved Aug 2, 2026); AQI.in national dashboard. AQI categories follow the CPCB National Air Quality Index standard (Good–Severe, 0–500).<br>
+    Water quality: Central Pollution Control Board (CPCB) National Water Quality Monitoring Programme; Central Ground Water Board (CGWB) contamination assessments; Bureau of Indian Standards (BIS) 2019 tap-water quality study across 21 Indian cities; NITI Aayog Composite Water Management Index. Water scores are composite estimates, not live sensor readings.<br>
+    Cities marked <span class="data-flag" style="position:static;">EST.</span> have one or more values interpolated due to missing granular station data — see individual city notes.
+  `;
+}
+
+init();
+</script>
+</body>
+</html>
