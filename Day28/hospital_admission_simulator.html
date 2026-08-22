@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hospital Admission Readiness Simulator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', Arial, sans-serif; }
+  .fade-in { animation: fadeIn 0.35s ease forwards; opacity: 0; transform: translateY(6px); }
+  @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+  .scroll-thin::-webkit-scrollbar { width: 8px; }
+  .scroll-thin::-webkit-scrollbar-thumb { background: #bcdcf7; border-radius: 8px; }
+</style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen text-slate-900">
+
+<!-- ===================== HEADER ===================== -->
+<header class="bg-blue-900 text-white shadow-md sticky top-0 z-30">
+  <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+    <div>
+      <h1 class="text-lg sm:text-xl font-bold tracking-wide">🏥 Hospital Admission Readiness Simulator</h1>
+      <p class="text-blue-200 text-xs sm:text-sm mt-0.5">Play the role of a Hospital Admission Coordinator — assess, resolve, and prepare a case for admission.</p>
+    </div>
+    <div id="headerScoreWrap" class="hidden">
+      <div class="bg-blue-950/60 rounded-xl px-4 py-2 text-center">
+        <div class="text-[10px] text-blue-200 uppercase tracking-wide">Readiness Score</div>
+        <div id="headerScoreValue" class="text-2xl font-extrabold text-amber-400">0%</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-5" id="mainRoot">
+  <!-- screens injected here -->
+</main>
+
+<footer class="text-center text-[11px] text-slate-500 pb-8 px-4">
+  Educational simulation only. All provider names, payer names ("MedFirst Health Plan"), and figures are illustrative training data — not real entities or real statistics for any specific payer.
+</footer>
+
+<script>
+/* ================================================================
+   HOSPITAL ADMISSION READINESS SIMULATOR
+   Single-file vanilla JS + Tailwind CDN. Task-first: nothing renders
+   until the user completes setup and clicks Analyze.
+   ================================================================ */
+
+const mainRoot = document.getElementById('mainRoot');
+const headerScoreWrap = document.getElementById('headerScoreWrap');
+const headerScoreValue = document.getElementById('headerScoreValue');
+
+/* ----------------------------------------------------------------
+   REFERENCE DATA (editable)
+---------------------------------------------------------------- */
+const DIAGNOSES = ["Acute MI", "CHF", "Pneumonia", "Elective Surgery", "Hip Fracture"];
+const ADMISSION_TYPES = ["Inpatient", "Observation", "Emergency", "ICU", "Same-Day Surgery"];
+const HIGH_ACUITY_DX = ["Acute MI", "CHF"];
+
+/* ----------------------------------------------------------------
+   STATE
+---------------------------------------------------------------- */
+let caseData = null;      // setup form data
+let taskState = null;     // dynamic workflow state after analysis
+let screen = 'setup';     // 'setup' | 'workspace'
+
+/* ================================================================
+   SCREEN: SETUP
+   ================================================================ */
+function renderSetup() {
+  screen = 'setup';
+  headerScoreWrap.classList.add('hidden');
+  clear(mainRoot);
+
+  const card = el('div', 'fade-in max-w-2xl mx-auto bg-white border border-blue-200 rounded-2xl shadow-sm p-6');
+
+  const title = el('h2', 'text-lg font-bold text-blue-900 mb-1', '📋 New Admission Case — Setup');
+  const sub = el('p', 'text-sm text-slate-600 mb-5', 'Enter the case details below to begin the admission readiness workflow.');
+  card.appendChild(title);
+  card.appendChild(sub);
+
+  const form = el('div', 'space-y-4');
+
+  // Provider
+  const providerField = fieldWrap('Provider (Facility)', () => {
+    const input = el('input', 'w-full border border-blue-300 rounded-lg px-3 py-2 text-sm');
+    input.type = 'text';
+    input.id = 'inputProvider';
+    input.placeholder = 'e.g. Riverside Regional Medical Center (illustrative)';
+    input.value = 'Riverside Regional Medical Center';
+    return input;
+  });
+  form.appendChild(providerField);
+
+  // Attending physician
+  const physicianField = fieldWrap('Attending Physician', () => {
+    const input = el('input', 'w-full border border-blue-300 rounded-lg px-3 py-2 text-sm');
+    input.type = 'text';
+    input.id = 'inputPhysician';
+    input.placeholder = 'e.g. Dr. Angela Ruiz (illustrative)';
+    input.value = 'Dr. Angela Ruiz';
+    return input;
+  });
+  form.appendChild(physicianField);
+
+  // Diagnosis
+  const dxField = fieldWrap('Diagnosis', () => {
+    const select = el('select', 'w-full border border-blue-300 rounded-lg px-3 py-2 text-sm bg-white');
+    select.id = 'inputDiagnosis';
+    DIAGNOSES.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d; opt.textContent = d;
+      select.appendChild(opt);
+    });
+    return select;
+  });
+  form.appendChild(dxField);
+
+  // Admission type
+  const admitField = fieldWrap('Admission Type', () => {
+    const select = el('select', 'w-full border border-blue-300 rounded-lg px-3 py-2 text-sm bg-white');
+    select.id = 'inputAdmissionType';
+    ADMISSION_TYPES.forEach(a => {
+      const opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      select.appendChild(opt);
+    });
+    select.addEventListener('change', () => renderObservationNoticeIfNeeded());
+    return select;
+  });
+  form.appendChild(admitField);
+
+  // Observation notice placeholder (dynamic)
+  const obsNoticeHolder = el('div', '');
+  obsNoticeHolder.id = 'obsNoticeHolder';
+  form.appendChild(obsNoticeHolder);
+
+  // PA Status
+  const paField = fieldWrap('Prior Authorization (PA) Status', () => {
+    const select = el('select', 'w-full border border-blue-300 rounded-lg px-3 py-2 text-sm bg-white');
+    select.id = 'inputPaStatus';
+    ["Approved", "Pending", "Denied"].forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p; opt.textContent = p;
+      select.appendChild(opt);
+    });
+    select.value = "Pending";
+    return select;
+  });
+  form.appendChild(paField);
+
+  // Admission date
+  const dateField = fieldWrap('Admission Date', () => {
+    const input = el('input', 'w-full border border-blue-300 rounded-lg px-3 py-2 text-sm');
+    input.type = 'date';
+    input.id = 'inputAdmissionDate';
+    const today = new Date().toISOString().split('T')[0];
+    input.value = today;
+    return input;
+  });
+  form.appendChild(dateField);
+
+  card.appendChild(form);
+
+  const btnRow = el('div', 'mt-6');
+  const analyzeBtn = el('button', 'w-full bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm rounded-xl px-5 py-3 shadow transition-all', '🏥 Analyze Admission Readiness');
+  analyzeBtn.addEventListener('click', handleAnalyze);
+  btnRow.appendChild(analyzeBtn);
+  card.appendChild(btnRow);
+
+  mainRoot.appendChild(card);
+
+  // trigger observation notice check on initial render
+  renderObservationNoticeIfNeeded();
+}
+
+function renderObservationNoticeIfNeeded() {
+  const holder = document.getElementById('obsNoticeHolder');
+  const admissionType = document.getElementById('inputAdmissionType').value;
+  clear(holder);
+  if (admissionType === 'Observation') {
+    const notice = el('div', 'fade-in bg-amber-50 border border-amber-300 rounded-lg px-3 py-2.5 text-xs text-amber-900 mt-1');
+    notice.textContent = "⚠ CMS 2-Midnight Rule applies — different cost-sharing, SNF eligibility, and billing than inpatient. Medicare patients require written MOON notification.";
+    holder.appendChild(notice);
+  }
+}
+
+/* ----------------------------------------------------------------
+   FIELD HELPER
+---------------------------------------------------------------- */
+function fieldWrap(labelText, inputBuilder) {
+  const wrap = el('div', '');
+  const label = el('label', 'block text-xs font-semibold text-blue-800 mb-1', labelText);
+  wrap.appendChild(label);
+  wrap.appendChild(inputBuilder());
+  return wrap;
+}
+
+/* ================================================================
+   ANALYZE -> BUILD INITIAL TASK STATE
+   ================================================================ */
+function handleAnalyze() {
+  caseData = {
+    provider: document.getElementById('inputProvider').value.trim() || "Riverside Regional Medical Center",
+    physician: document.getElementById('inputPhysician').value.trim() || "Dr. Angela Ruiz",
+    diagnosis: document.getElementById('inputDiagnosis').value,
+    admissionType: document.getElementById('inputAdmissionType').value,
+    paStatus: document.getElementById('inputPaStatus').value,
+    admissionDate: document.getElementById('inputAdmissionDate').value
+  };
+
+  // Build initial task/workflow state
+  taskState = {
+    pa: { status: caseData.paStatus, appealSubmitted: false, appealResult: null },
+    insurance: { status: 'Unverified' },        // Unverified -> Verified
+    bed: { status: 'Unassigned' },               // Unassigned -> Assigned
+    documentation: { status: 'Incomplete' },     // Incomplete -> Complete
+    physicianOrders: { status: 'Pending' },      // Pending -> Signed
+    consent: { status: 'Not Signed' },           // Not Signed -> Signed
+    nursingNotified: false,
+    patientArrivalPrepared: false,
+    timelineCompleted: {
+      "PA Review": false,
+      "Insurance Verification": false,
+      "Bed Assignment": false,
+      "Documentation": false,
+      "Consent": false,
+      "Patient Arrival": false,
+      "Registration": false,
+      "Clinical Assessment": false,
+      "Admission Complete": false
+    },
+    activityLog: []
+  };
+
+  // seed initial partial randomness within 30-60% band is handled by weighting function itself
+  logActivity(`Case created for ${caseData.diagnosis} (${caseData.admissionType}) — PA status at intake: ${caseData.paStatus}.`);
+  if (taskState.pa.status === 'Approved') {
+    taskState.timelineCompleted["PA Review"] = true;
+  }
+
+  renderWorkspace();
+}
+
+/* ================================================================
+   SCORING ENGINE
+   Weights: PA 25% · Clinical Documentation 20% · Physician Orders 20%
+            · Insurance 15% · Consent 10% · Bed 10%
+   ================================================================ */
+function computeScore() {
+  let paScore = 0;
+  if (taskState.pa.status === 'Approved') paScore = 100;
+  else if (taskState.pa.status === 'Pending') paScore = 40;
+  else if (taskState.pa.status === 'Denied') paScore = 0;
+
+  const docScore = taskState.documentation.status === 'Complete' ? 100 : 30;
+  const orderScore = taskState.physicianOrders.status === 'Signed' ? 100 : 25;
+  const insuranceScore = taskState.insurance.status === 'Verified' ? 100 : 35;
+  const consentScore = taskState.consent.status === 'Signed' ? 100 : 20;
+  const bedScore = taskState.bed.status === 'Assigned' ? 100 : 30;
+
+  let weighted =
+    (paScore * 0.25) +
+    (docScore * 0.20) +
+    (orderScore * 0.20) +
+    (insuranceScore * 0.15) +
+    (consentScore * 0.10) +
+    (bedScore * 0.10);
+
+  // Hard rule: Denied PA + ICU admission cannot reach 70% from admin tasks alone
+  const isIcu = caseData.admissionType === 'ICU';
+  if (taskState.pa.status === 'Denied' && isIcu) {
+    weighted = Math.min(weighted, 69);
+  }
+
+  // clamp into believable initial band only when nothing has been touched yet
+  return Math.round(Math.max(0, Math.min(100, weighted)));
+}
+
+function isInitialUntouchedState() {
+  return taskState.insurance.status === 'Unverified' &&
+         taskState.bed.status === 'Unassigned' &&
+         taskState.documentation.status === 'Incomplete' &&
+         taskState.physicianOrders.status === 'Pending' &&
+         taskState.consent.status === 'Not Signed' &&
+         !taskState.pa.appealSubmitted;
+}
+
+/* ================================================================
+   RISK ENGINE
+   ================================================================ */
+function computeRisks() {
+  const isHighAcuity = HIGH_ACUITY_DX.includes(caseData.diagnosis) || caseData.admissionType === 'ICU';
+
+  const docRisk = taskState.documentation.status === 'Complete' ? 'Low' : (isHighAcuity ? 'High' : 'Medium');
+  const insuranceRisk = taskState.pa.status === 'Denied' ? 'High' : (taskState.insurance.status === 'Verified' ? 'Low' : 'Medium');
+  const bedRisk = taskState.bed.status === 'Assigned' ? 'Low' : 'Medium';
+
+  let clinicalRiskBase = (taskState.physicianOrders.status === 'Signed' && taskState.documentation.status === 'Complete') ? 'Low' : 'Medium';
+  if (isHighAcuity && !(taskState.physicianOrders.status === 'Signed' && taskState.documentation.status === 'Complete')) {
+    clinicalRiskBase = 'High'; // weighted higher for Acute MI, CHF, ICU
+  }
+
+  return {
+    documentation: docRisk,
+    insurance: insuranceRisk,
+    bed: bedRisk,
+    clinical: clinicalRiskBase
+  };
+}
+
+function riskColor(level) {
+  if (level === 'High') return 'bg-red-100 text-red-700 border-red-300';
+  if (level === 'Medium') return 'bg-amber-100 text-amber-700 border-amber-300';
+  return 'bg-green-100 text-green-700 border-green-300';
+}
+
+/* ================================================================
+   ACTIVITY LOG
+   ================================================================ */
+function logActivity(text) {
+  taskState.activityLog.unshift({ text, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+}
+
+/* ================================================================
+   SCREEN: WORKSPACE (post-analysis)
+   ================================================================ */
+function renderWorkspace() {
+  screen = 'workspace';
+  clear(mainRoot);
+  headerScoreWrap.classList.remove('hidden');
+
+  const score = computeScore();
+  headerScoreValue.textContent = score + '%';
+
+  const grid = el('div', 'grid grid-cols-1 lg:grid-cols-3 gap-4');
+
+  // LEFT+CENTER column (span 2)
+  const leftCol = el('div', 'lg:col-span-2 space-y-4');
+  leftCol.appendChild(renderCaseSummaryCard());
+  leftCol.appendChild(renderStatusGridCard());
+  leftCol.appendChild(renderPaBranchCard());
+  leftCol.appendChild(renderWorkflowActionsCard());
+  leftCol.appendChild(renderTimelineCard());
+  leftCol.appendChild(renderFinalDecisionCard(score));
+  leftCol.appendChild(renderActivityLogCard());
+
+  // RIGHT column
+  const rightCol = el('div', 'space-y-4');
+  rightCol.appendChild(renderCareCoordinationCard());
+  rightCol.appendChild(renderRiskTrackingCard());
+  const govSnapshot = renderGovernanceSnapshotCard(score);
+  if (govSnapshot) rightCol.appendChild(govSnapshot);
+  rightCol.appendChild(renderRestartCard());
+
+  grid.appendChild(leftCol);
+  grid.appendChild(rightCol);
+  mainRoot.appendChild(grid);
+}
+
+/* ---------------- CASE SUMMARY ---------------- */
+function renderCaseSummaryCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-2', `🗂️ Case Summary`);
+  card.appendChild(title);
+
+  const grid = el('div', 'grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs');
+  grid.appendChild(miniStat('Provider', caseData.provider));
+  grid.appendChild(miniStat('Attending', caseData.physician));
+  grid.appendChild(miniStat('Diagnosis', caseData.diagnosis));
+  grid.appendChild(miniStat('Admission Type', caseData.admissionType));
+  grid.appendChild(miniStat('Admission Date', caseData.admissionDate));
+  grid.appendChild(miniStat('PA Status', taskState.pa.status));
+  card.appendChild(grid);
+
+  if (caseData.admissionType === 'Observation') {
+    const notice = el('div', 'mt-3 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2.5 text-xs text-amber-900');
+    notice.textContent = "⚠ CMS 2-Midnight Rule applies — different cost-sharing, SNF eligibility, and billing than inpatient. Medicare patients require written MOON notification.";
+    card.appendChild(notice);
+  }
+
+  if (HIGH_ACUITY_DX.includes(caseData.diagnosis)) {
+    const uc = el('div', 'mt-2 bg-indigo-50 border border-indigo-300 rounded-lg px-3 py-2.5 text-xs text-indigo-900');
+    uc.textContent = "📐 InterQual/Milliman thresholds apply — ensure documentation meets medical necessity standards before UR review.";
+    card.appendChild(uc);
+  }
+
+  return card;
+}
+
+function miniStat(label, value) {
+  const wrap = el('div', 'bg-blue-50 border border-blue-200 rounded-lg px-3 py-2');
+  const l = el('div', 'text-[10px] text-blue-500 uppercase font-semibold', label);
+  const v = el('div', 'text-slate-800 font-medium mt-0.5', value);
+  wrap.appendChild(l); wrap.appendChild(v);
+  return wrap;
+}
+
+/* ---------------- STATUS GRID ---------------- */
+function renderStatusGridCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-3', '🔎 Initial Analysis — Status Grid');
+  card.appendChild(title);
+
+  const grid = el('div', 'grid grid-cols-2 sm:grid-cols-3 gap-3');
+
+  grid.appendChild(statusPill('PA', taskState.pa.status, paStatusColor(taskState.pa.status)));
+  grid.appendChild(statusPill('Insurance', taskState.insurance.status, taskState.insurance.status === 'Verified' ? 'green' : 'amber'));
+  grid.appendChild(statusPill('Bed', taskState.bed.status, taskState.bed.status === 'Assigned' ? 'green' : 'amber'));
+  grid.appendChild(statusPill('Documentation', taskState.documentation.status, taskState.documentation.status === 'Complete' ? 'green' : 'amber'));
+  grid.appendChild(statusPill('Physician Orders', taskState.physicianOrders.status, taskState.physicianOrders.status === 'Signed' ? 'green' : 'amber'));
+  grid.appendChild(statusPill('Consent', taskState.consent.status, taskState.consent.status === 'Signed' ? 'green' : 'amber'));
+
+  card.appendChild(grid);
+
+  const scoreNote = el('p', 'text-xs text-slate-500 mt-3', 'Weighting → PA 25% · Documentation 20% · Physician Orders 20% · Insurance 15% · Consent 10% · Bed 10%.');
+  card.appendChild(scoreNote);
+
+  return card;
+}
+
+function paStatusColor(status) {
+  if (status === 'Approved') return 'green';
+  if (status === 'Pending') return 'amber';
+  return 'red';
+}
+
+function statusPill(label, value, color) {
+  const colorClass = color === 'green' ? 'bg-green-100 text-green-700 border-green-300'
+    : color === 'amber' ? 'bg-amber-100 text-amber-700 border-amber-300'
+    : 'bg-red-100 text-red-700 border-red-300';
+  const wrap = el('div', `border ${colorClass} rounded-lg px-3 py-2.5 text-xs`);
+  const l = el('div', 'font-semibold uppercase text-[10px] tracking-wide opacity-80', label);
+  const v = el('div', 'font-bold mt-0.5', value);
+  wrap.appendChild(l); wrap.appendChild(v);
+  return wrap;
+}
+
+/* ---------------- PA BRANCH CARD ---------------- */
+function renderPaBranchCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-2', '🧾 Prior Authorization — Next Step');
+  card.appendChild(title);
+
+  const status = taskState.pa.status;
+  const desc = el('p', 'text-sm text-slate-600 mb-3');
+
+  if (status === 'Approved') {
+    desc.textContent = 'PA is approved. No further PA action needed — continue with the remaining admission workflow.';
+    card.appendChild(desc);
+    return card;
+  }
+
+  if (status === 'Pending') {
+    desc.textContent = 'PA is pending payer decision. Choose an action below to move it forward.';
+    card.appendChild(desc);
+    const row = el('div', 'flex flex-wrap gap-2');
+    row.appendChild(actionButton('📞 Follow Up', 'btn-outline', () => {
+      logActivity('Followed up with payer on pending PA — payer confirms request is under review.');
+      renderWorkspace();
+    }));
+    row.appendChild(actionButton('📤 Upload Docs', 'btn-outline', () => {
+      taskState.documentation.status = 'Complete';
+      logActivity('Uploaded supporting clinical documentation to strengthen the pending PA request.');
+      // small chance improves things, simulate payer approving after strong docs
+      taskState.pa.status = 'Approved';
+      taskState.timelineCompleted["PA Review"] = true;
+      logActivity('✅ Payer approved PA after reviewing uploaded documentation.');
+      renderWorkspace();
+    }));
+    row.appendChild(actionButton('☎️ Contact Physician', 'btn-outline', () => {
+      taskState.physicianOrders.status = 'Signed';
+      logActivity("Contacted attending physician's office — physician orders signed and returned.");
+      renderWorkspace();
+    }));
+    card.appendChild(row);
+    return card;
+  }
+
+  // Denied
+  desc.innerHTML = '';
+  desc.textContent = 'PA was denied. Review the reason, contact the insurer, and file an appeal if appropriate.';
+  card.appendChild(desc);
+
+  const reasonBox = el('div', 'bg-red-50 border border-red-300 rounded-lg px-3 py-2.5 text-xs text-red-800 mb-3');
+  reasonBox.textContent = "Denial Reason (illustrative): Medical necessity criteria not fully documented for the requested admission level.";
+  card.appendChild(reasonBox);
+
+  const row = el('div', 'flex flex-wrap gap-2');
+  row.appendChild(actionButton('🔍 Review Reason', 'btn-outline', () => {
+    logActivity('Reviewed denial reason with case manager — identified missing clinical necessity documentation.');
+    renderWorkspace();
+  }));
+  row.appendChild(actionButton('📇 Contact Insurance', 'btn-outline', () => {
+    logActivity('Contacted MedFirst Health Plan (illustrative payer) — confirmed appeal window and required documents.');
+    renderWorkspace();
+  }));
+  row.appendChild(actionButton('📝 Submit Appeal', 'btn-primary', () => {
+    taskState.pa.appealSubmitted = true;
+    // successful appeal converts to Approved, contingent on documentation quality
+    const docsReady = taskState.documentation.status === 'Complete';
+    if (docsReady) {
+      taskState.pa.status = 'Approved';
+      taskState.pa.appealResult = 'Successful';
+      taskState.timelineCompleted["PA Review"] = true;
+      logActivity('✅ Appeal submitted and approved — clinical documentation supported medical necessity. PA converted to Approved.');
+    } else {
+      taskState.pa.appealResult = 'Pending Additional Info';
+      taskState.pa.status = 'Pending';
+      logActivity('📝 Appeal submitted, but payer requests additional clinical documentation before reconsideration.');
+    }
+    renderWorkspace();
+  }));
+  card.appendChild(row);
+
+  return card;
+}
+
+/* ---------------- WORKFLOW ACTIONS ---------------- */
+function renderWorkflowActionsCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-2', '⚙️ Workflow Actions');
+  card.appendChild(title);
+  const sub = el('p', 'text-xs text-slate-500 mb-3', 'Complete the remaining admin tasks to improve readiness.');
+  card.appendChild(sub);
+
+  const row = el('div', 'flex flex-wrap gap-2');
+
+  row.appendChild(actionButton('🛏️ Assign Bed', taskState.bed.status === 'Assigned' ? 'btn-done' : 'btn-outline', () => {
+    if (taskState.bed.status === 'Assigned') return;
+    taskState.bed.status = 'Assigned';
+    taskState.timelineCompleted["Bed Assignment"] = true;
+    logActivity('Bed assigned on the appropriate unit for diagnosis and admission type.');
+    renderWorkspace();
+  }, taskState.bed.status === 'Assigned'));
+
+  row.appendChild(actionButton('🧾 Verify Insurance', taskState.insurance.status === 'Verified' ? 'btn-done' : 'btn-outline', () => {
+    if (taskState.insurance.status === 'Verified') return;
+    taskState.insurance.status = 'Verified';
+    taskState.timelineCompleted["Insurance Verification"] = true;
+    logActivity('Insurance eligibility and benefits verified with MedFirst Health Plan (illustrative payer).');
+    renderWorkspace();
+  }, taskState.insurance.status === 'Verified'));
+
+  row.appendChild(actionButton('📄 Upload Documentation', taskState.documentation.status === 'Complete' ? 'btn-done' : 'btn-outline', () => {
+    if (taskState.documentation.status === 'Complete') return;
+    taskState.documentation.status = 'Complete';
+    taskState.timelineCompleted["Documentation"] = true;
+    logActivity('Clinical documentation package uploaded and marked complete.');
+    renderWorkspace();
+  }, taskState.documentation.status === 'Complete'));
+
+  row.appendChild(actionButton('✍️ Complete Consent', taskState.consent.status === 'Signed' ? 'btn-done' : 'btn-outline', () => {
+    if (taskState.consent.status === 'Signed') return;
+    taskState.consent.status = 'Signed';
+    taskState.timelineCompleted["Consent"] = true;
+    logActivity('Patient/guardian consent for treatment signed and filed.');
+    renderWorkspace();
+  }, taskState.consent.status === 'Signed'));
+
+  row.appendChild(actionButton('☎️ Contact Physician', 'btn-outline', () => {
+    taskState.physicianOrders.status = 'Signed';
+    logActivity("Contacted attending physician's office — physician orders signed.");
+    renderWorkspace();
+  }));
+
+  row.appendChild(actionButton('🩺 Notify Nursing', taskState.nursingNotified ? 'btn-done' : 'btn-outline', () => {
+    if (taskState.nursingNotified) return;
+    taskState.nursingNotified = true;
+    logActivity('Receiving nursing unit notified of incoming admission and diagnosis-specific needs.');
+    renderWorkspace();
+  }, taskState.nursingNotified));
+
+  row.appendChild(actionButton('🚑 Prepare Patient Arrival', taskState.patientArrivalPrepared ? 'btn-done' : 'btn-outline', () => {
+    if (taskState.patientArrivalPrepared) return;
+    taskState.patientArrivalPrepared = true;
+    taskState.timelineCompleted["Patient Arrival"] = true;
+    taskState.timelineCompleted["Registration"] = true;
+    taskState.timelineCompleted["Clinical Assessment"] = true;
+    logActivity('Patient arrival logistics prepared — transport, registration, and initial clinical assessment coordinated.');
+    renderWorkspace();
+  }, taskState.patientArrivalPrepared));
+
+  card.appendChild(row);
+  return card;
+}
+
+function actionButton(label, style, handler, disabled) {
+  let cls = 'text-xs font-semibold rounded-lg px-3 py-2 transition-all border ';
+  if (style === 'btn-primary') cls += 'bg-blue-700 hover:bg-blue-800 text-white border-blue-700';
+  else if (style === 'btn-done') cls += 'bg-green-100 text-green-700 border-green-300 cursor-default';
+  else cls += 'bg-white hover:bg-blue-50 text-blue-800 border-blue-300';
+
+  const btn = el('button', cls, label);
+  if (disabled) {
+    // still shown but visually marked done; clicking is a no-op via handler guard
+  }
+  btn.addEventListener('click', handler);
+  return btn;
+}
+
+/* ---------------- TIMELINE ---------------- */
+function renderTimelineCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-3', '🗺️ Admission Timeline');
+  card.appendChild(title);
+
+  const milestones = Object.keys(taskState.timelineCompleted);
+  const track = el('div', 'flex flex-wrap gap-2');
+
+  milestones.forEach((m, i) => {
+    const done = taskState.timelineCompleted[m];
+    const chip = el('div', `text-[11px] font-semibold rounded-full px-3 py-1.5 border ${done ? 'bg-green-100 text-green-700 border-green-300' : 'bg-slate-100 text-slate-500 border-slate-300'}`);
+    chip.textContent = (done ? '✔ ' : '○ ') + m;
+    track.appendChild(chip);
+  });
+
+  card.appendChild(track);
+  return card;
+}
+
+/* ---------------- CARE COORDINATION ---------------- */
+function renderCareCoordinationCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-3', '🧑‍⚕️ Care Coordination');
+  card.appendChild(title);
+
+  const roles = [
+    { name: 'Attending', icon: '👨‍⚕️', desc: `${caseData.physician} — oversees diagnosis, orders, and clinical direction for this admission.` },
+    { name: 'Case Manager', icon: '🗃️', desc: 'Coordinates PA status, documentation completeness, and discharge readiness planning from day one.' },
+    { name: 'Nursing', icon: '💉', desc: 'Receiving unit prepares for patient arrival, diagnosis-specific monitoring, and initial assessment.' },
+    { name: 'Utilization Review', icon: '📊', desc: 'Performs concurrent review and denial risk identification, applying InterQual and Milliman criteria to confirm medical necessity throughout the stay.' },
+    { name: 'Discharge Planner', icon: '🏠', desc: 'Begins early discharge planning — post-acute needs, SNF/home health referrals, and follow-up scheduling.' }
+  ];
+
+  roles.forEach(r => {
+    const row = el('div', 'flex items-start gap-2 mb-2 last:mb-0');
+    const icon = el('div', 'text-lg', r.icon);
+    const textWrap = el('div', '');
+    const name = el('div', 'text-xs font-bold text-blue-800', r.name);
+    const desc = el('div', 'text-[11px] text-slate-600 leading-snug', r.desc);
+    textWrap.appendChild(name); textWrap.appendChild(desc);
+    row.appendChild(icon); row.appendChild(textWrap);
+    card.appendChild(row);
+  });
+
+  return card;
+}
+
+/* ---------------- RISK TRACKING ---------------- */
+function renderRiskTrackingCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-3', '⚠️ Risk Tracking');
+  card.appendChild(title);
+
+  const risks = computeRisks();
+  const grid = el('div', 'grid grid-cols-2 gap-2');
+
+  grid.appendChild(riskChip('Documentation', risks.documentation));
+  grid.appendChild(riskChip('Insurance', risks.insurance));
+  grid.appendChild(riskChip('Bed', risks.bed));
+  grid.appendChild(riskChip('Clinical', risks.clinical));
+
+  card.appendChild(grid);
+
+  if (HIGH_ACUITY_DX.includes(caseData.diagnosis) || caseData.admissionType === 'ICU') {
+    const note = el('p', 'text-[11px] text-slate-500 mt-2', 'Clinical Risk is weighted higher for Acute MI, CHF, and ICU admissions.');
+    card.appendChild(note);
+  }
+
+  return card;
+}
+
+function riskChip(label, level) {
+  const wrap = el('div', `border rounded-lg px-2.5 py-2 text-center ${riskColor(level)}`);
+  const l = el('div', 'text-[10px] font-semibold uppercase opacity-80', label);
+  const v = el('div', 'text-xs font-bold mt-0.5', level);
+  wrap.appendChild(l); wrap.appendChild(v);
+  return wrap;
+}
+
+/* ---------------- GOVERNANCE SNAPSHOT ---------------- */
+function renderGovernanceSnapshotCard(score) {
+  if (score < 75) return null;
+  const card = cardShell('border-indigo-300 bg-indigo-50');
+  const title = el('h3', 'text-base font-bold text-indigo-900 mb-2', '📈 Governance Snapshot');
+  card.appendChild(title);
+  const body = el('p', 'text-xs text-indigo-900 leading-relaxed');
+  body.textContent = "Industry benchmarks (estimates only): PA turnaround 3–5 days · Inpatient denial rate ~8–10% (CMS) · PA rework cost ~$11/transaction (CAQH).";
+  card.appendChild(body);
+  return card;
+}
+
+/* ---------------- FINAL DECISION ---------------- */
+function renderFinalDecisionCard(score) {
+  const ready = score >= 90;
+  const card = cardShell(ready ? 'border-green-400 bg-green-50' : 'border-amber-400 bg-amber-50');
+
+  const title = el('h3', `text-base font-bold mb-2 ${ready ? 'text-green-800' : 'text-amber-800'}`,
+    ready ? '✅ Admit — Ready for Admission' : '⚠ Not Ready — Admission Pending');
+  card.appendChild(title);
+
+  const scoreLine = el('p', `text-sm font-semibold mb-2 ${ready ? 'text-green-700' : 'text-amber-700'}`, `Readiness Score: ${score}%`);
+  card.appendChild(scoreLine);
+
+  if (ready) {
+    const summary = el('div', 'text-sm text-green-900 space-y-1');
+    [
+      `Patient: scheduled for ${caseData.admissionType} admission — ${caseData.diagnosis}.`,
+      `Provider: ${caseData.provider} · Attending: ${caseData.physician}.`,
+      `PA Status: ${taskState.pa.status}. Insurance: ${taskState.insurance.status}. Bed: ${taskState.bed.status}.`,
+      `Documentation: ${taskState.documentation.status}. Physician Orders: ${taskState.physicianOrders.status}. Consent: ${taskState.consent.status}.`,
+      `All admission workflow requirements have been satisfied. Patient may proceed to registration and clinical assessment.`
+    ].forEach(line => card.appendChild(el('p', '', line)));
+  } else {
+    const missing = [];
+    if (taskState.pa.status !== 'Approved') missing.push('Prior Authorization not yet Approved');
+    if (taskState.insurance.status !== 'Verified') missing.push('Insurance not yet Verified');
+    if (taskState.bed.status !== 'Assigned') missing.push('Bed not yet Assigned');
+    if (taskState.documentation.status !== 'Complete') missing.push('Clinical Documentation incomplete');
+    if (taskState.physicianOrders.status !== 'Signed') missing.push('Physician Orders not signed');
+    if (taskState.consent.status !== 'Signed') missing.push('Consent not signed');
+
+    if (missing.length > 0) {
+      const missingTitle = el('p', 'text-xs font-bold text-amber-800 mt-2 mb-1', 'Missing Items:');
+      card.appendChild(missingTitle);
+      const ul = el('ul', 'list-disc list-inside text-xs text-amber-900 space-y-0.5');
+      missing.forEach(m => ul.appendChild(el('li', '', m)));
+      card.appendChild(ul);
+    }
+
+    const risks = computeRisks();
+    const remainingRisks = Object.entries(risks).filter(([k, v]) => v !== 'Low');
+    if (remainingRisks.length > 0) {
+      const riskTitle = el('p', 'text-xs font-bold text-amber-800 mt-3 mb-1', 'Remaining Risks:');
+      card.appendChild(riskTitle);
+      const ul2 = el('ul', 'list-disc list-inside text-xs text-amber-900 space-y-0.5');
+      remainingRisks.forEach(([k, v]) => ul2.appendChild(el('li', '', `${capitalize(k)} Risk: ${v}`)));
+      card.appendChild(ul2);
+    }
+
+    const actionTitle = el('p', 'text-xs font-bold text-amber-800 mt-3 mb-1', 'Required Actions:');
+    card.appendChild(actionTitle);
+    const actionsList = [];
+    if (taskState.pa.status === 'Denied') actionsList.push('Resolve PA denial via appeal or additional documentation.');
+    if (taskState.pa.status === 'Pending') actionsList.push('Follow up with payer or strengthen PA documentation.');
+    if (taskState.insurance.status !== 'Verified') actionsList.push('Complete insurance verification.');
+    if (taskState.bed.status !== 'Assigned') actionsList.push('Assign an appropriate bed.');
+    if (taskState.documentation.status !== 'Complete') actionsList.push('Upload complete clinical documentation.');
+    if (taskState.physicianOrders.status !== 'Signed') actionsList.push('Obtain signed physician orders.');
+    if (taskState.consent.status !== 'Signed') actionsList.push('Complete patient consent.');
+    const ul3 = el('ul', 'list-disc list-inside text-xs text-amber-900 space-y-0.5');
+    actionsList.forEach(a => ul3.appendChild(el('li', '', a)));
+    card.appendChild(ul3);
+  }
+
+  return card;
+}
+
+/* ---------------- ACTIVITY LOG ---------------- */
+function renderActivityLogCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-2', '📜 Activity Log');
+  card.appendChild(title);
+
+  if (taskState.activityLog.length === 0) {
+    card.appendChild(el('p', 'text-xs text-slate-500', 'No actions taken yet.'));
+    return card;
+  }
+
+  const list = el('div', 'space-y-1.5 max-h-56 overflow-y-auto scroll-thin pr-1');
+  taskState.activityLog.forEach(entry => {
+    const row = el('div', 'text-xs text-slate-700 border-b border-slate-100 pb-1.5');
+    const time = el('span', 'text-slate-400 font-semibold mr-1.5', `[${entry.time}]`);
+    row.appendChild(time);
+    row.appendChild(document.createTextNode(entry.text));
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+
+  return card;
+}
+
+/* ---------------- RESTART ---------------- */
+function renderRestartCard() {
+  const card = cardShell();
+  const title = el('h3', 'text-base font-bold text-blue-900 mb-2', '🔄 New Case');
+  card.appendChild(title);
+  const desc = el('p', 'text-xs text-slate-600 mb-3', 'Start a fresh admission readiness case.');
+  card.appendChild(desc);
+  const btn = el('button', 'w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold text-xs rounded-lg px-4 py-2.5 transition-all', 'Start New Case');
+  btn.addEventListener('click', () => {
+    caseData = null;
+    taskState = null;
+    renderSetup();
+  });
+  card.appendChild(btn);
+  return card;
+}
+
+/* ----------------------------------------------------------------
+   GENERIC DOM HELPERS
+---------------------------------------------------------------- */
+function el(tag, className, textContent) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (textContent !== undefined) node.textContent = textContent;
+  return node;
+}
+
+function cardShell(extraClass) {
+  return el('div', `fade-in bg-white border rounded-2xl shadow-sm p-4 ${extraClass || 'border-blue-200'}`);
+}
+
+function clear(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+/* ----------------------------------------------------------------
+   BOOT
+---------------------------------------------------------------- */
+renderSetup();
+</script>
+</body>
+</html>
