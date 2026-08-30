@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cognitive Pattern Explorer</title>
+<style>
+  :root{
+    --bg1:#0f1220; --bg2:#1b2140; --card:#1e2540; --card2:#242c4d;
+    --accent:#7dd3c0; --accent2:#a78bfa; --accent3:#f0b6d4;
+    --text:#eef1fb; --muted:#9aa3c7; --good:#7dd3c0;
+    --radius:18px; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --dur:.5s;
+  }
+  [data-mode="stress"]{
+    --bg1:#0c0e14; --bg2:#141826; --card:#181d2e; --card2:#1e2438;
+    --accent:#6fb6ff; --accent2:#8f9bff; --accent3:#ff9db0;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+    background:radial-gradient(1200px 800px at 20% -10%, var(--bg2), var(--bg1));
+    color:var(--text); min-height:100vh; overflow-x:hidden; position:relative;
+    transition:background var(--dur) ease;
+  }
+  .ambient{position:fixed; inset:0; pointer-events:none; z-index:0; overflow:hidden;}
+  .blob{position:absolute; border-radius:50%; filter:blur(60px); opacity:.25;
+    animation:float 18s ease-in-out infinite;}
+  .blob.b1{width:340px; height:340px; background:var(--accent); top:-80px; left:-80px;}
+  .blob.b2{width:280px; height:280px; background:var(--accent2); bottom:-60px; right:-40px; animation-delay:-6s;}
+  .blob.b3{width:220px; height:220px; background:var(--accent3); top:40%; left:60%; animation-delay:-12s;}
+  @keyframes float{
+    0%,100%{transform:translate(0,0) scale(1);}
+    50%{transform:translate(30px,-30px) scale(1.08);}
+  }
+  #app{position:relative; z-index:1; max-width:900px; margin:0 auto; padding:24px 18px 60px;}
+  header.top{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-bottom:18px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:10px; font-weight:600; letter-spacing:.3px;}
+  .brand .dot{width:12px; height:12px; border-radius:50%; background:var(--accent); box-shadow:0 0 12px var(--accent);}
+  .mode-toggle{display:flex; gap:6px; background:var(--card); padding:4px; border-radius:999px; box-shadow:var(--shadow);}
+  .mode-toggle button{
+    border:none; background:transparent; color:var(--muted); padding:8px 14px; border-radius:999px;
+    cursor:pointer; font-size:.85rem; transition:all .3s ease;
+  }
+  .mode-toggle button.active{background:var(--accent); color:#0b0d16; font-weight:600;}
+  .progress-wrap{margin:18px 0 26px;}
+  .progress-track{height:8px; background:var(--card); border-radius:999px; overflow:hidden;}
+  .progress-fill{height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2));
+    transition:width .6s cubic-bezier(.4,0,.2,1); border-radius:999px;}
+  .progress-labels{display:flex; justify-content:space-between; margin-top:8px; font-size:.75rem; color:var(--muted);}
+  .step-pip{opacity:.4;}
+  .step-pip.active{opacity:1; color:var(--accent); font-weight:600;}
+
+  .screen{
+    display:none; animation:fadeIn var(--dur) ease;
+  }
+  .screen.visible{display:block;}
+  @keyframes fadeIn{
+    from{opacity:0; transform:translateY(14px);}
+    to{opacity:1; transform:translateY(0);}
+  }
+
+  .card{
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border-radius:var(--radius); padding:26px; box-shadow:var(--shadow);
+    border:1px solid rgba(255,255,255,.05);
+  }
+  h1{font-size:1.8rem; margin:.2em 0; line-height:1.25;}
+  h2{font-size:1.35rem; margin:.2em 0 .4em;}
+  p.sub{color:var(--muted); line-height:1.55;}
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    background:var(--accent); color:#0b0d16; border:none; padding:13px 26px;
+    border-radius:14px; font-size:1rem; font-weight:600; cursor:pointer;
+    transition:transform .2s ease, box-shadow .2s ease; box-shadow:0 6px 18px rgba(125,211,192,.25);
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn:focus-visible{outline:3px solid var(--accent3); outline-offset:3px;}
+  .btn.secondary{background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.2); box-shadow:none;}
+  .btn:disabled{opacity:.4; cursor:not-allowed; transform:none;}
+  .btn-row{display:flex; gap:12px; margin-top:22px; flex-wrap:wrap;}
+
+  .scenario-block{margin-top:20px;}
+  .scenario-q{font-size:1.05rem; margin-bottom:14px; line-height:1.5;}
+  .options{display:grid; gap:12px;}
+  .opt{
+    background:var(--card2); border:1px solid rgba(255,255,255,.06); border-radius:14px;
+    padding:14px 16px; cursor:pointer; text-align:left; color:var(--text); font-size:.98rem;
+    transition:border-color .25s ease, transform .15s ease, background .25s ease;
+  }
+  .opt:hover{border-color:var(--accent); transform:translateX(3px);}
+  .opt.selected{border-color:var(--accent); background:rgba(125,211,192,.12);}
+  .opt:focus-visible{outline:3px solid var(--accent3); outline-offset:2px;}
+
+  .card-stage{
+    display:grid; gap:14px; margin-top:18px;
+  }
+  .draggable-list{
+    list-style:none; padding:0; margin:0; display:grid; gap:10px;
+  }
+  .drag-card{
+    background:var(--card2); border:1px solid rgba(255,255,255,.08); border-radius:14px;
+    padding:14px 16px; cursor:grab; display:flex; align-items:center; gap:10px;
+    transition:transform .2s ease, box-shadow .2s ease, opacity .2s ease;
+    touch-action:none; user-select:none;
+  }
+  .drag-card:active{cursor:grabbing;}
+  .drag-card.dragging{opacity:.5; box-shadow:0 12px 24px rgba(0,0,0,.4);}
+  .drag-card .handle{opacity:.5; font-size:1.1rem;}
+  .drag-card:focus-visible{outline:3px solid var(--accent3); outline-offset:2px;}
+  .rank-badge{
+    width:26px; height:26px; border-radius:50%; background:var(--accent); color:#0b0d16;
+    display:flex; align-items:center; justify-content:center; font-size:.8rem; font-weight:700; flex-shrink:0;
+  }
+
+  .timeline-wrap{margin-top:20px;}
+  .timeline-track{
+    position:relative; height:70px; background:var(--card2); border-radius:16px;
+    border:1px solid rgba(255,255,255,.08); margin-top:10px;
+  }
+  .timeline-scale{display:flex; justify-content:space-between; font-size:.7rem; color:var(--muted); margin-top:6px; padding:0 6px;}
+  .timeline-token{
+    position:absolute; top:8px; width:54px; height:54px; border-radius:50%;
+    background:linear-gradient(180deg,var(--accent),var(--accent2)); color:#0b0d16;
+    display:flex; align-items:center; justify-content:center; font-size:.75rem; font-weight:700;
+    cursor:grab; box-shadow:0 6px 14px rgba(0,0,0,.3); text-align:center; padding:4px;
+    touch-action:none; user-select:none; transition:box-shadow .2s ease;
+  }
+  .timeline-token:active{cursor:grabbing;}
+  .timeline-token:focus-visible{outline:3px solid var(--accent3); outline-offset:2px;}
+  .timeline-item-label{margin-top:8px; font-size:.85rem; color:var(--muted);}
+
+  .journal{margin-top:10px;}
+  .insight-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:var(--card2); border-radius:12px; padding:12px 16px; margin-bottom:10px;
+  }
+  .bar-bg{flex:1; height:10px; background:rgba(255,255,255,.08); border-radius:999px; overflow:hidden; margin:0 12px;}
+  .bar-fill{height:100%; background:linear-gradient(90deg,var(--accent),var(--accent2)); width:0%; transition:width 1s cubic-bezier(.4,0,.2,1);}
+  .pct{font-weight:700; min-width:44px; text-align:right;}
+  .style-name{min-width:170px; font-size:.92rem;}
+  .reflection-text{
+    margin-top:20px; line-height:1.7; background:var(--card2); border-radius:14px; padding:18px; border-left:3px solid var(--accent);
+  }
+  .journal-textarea{
+    width:100%; min-height:110px; margin-top:14px; border-radius:14px; border:1px solid rgba(255,255,255,.1);
+    background:var(--card2); color:var(--text); padding:14px; font-family:inherit; font-size:.95rem; resize:vertical;
+  }
+  .journal-textarea:focus-visible{outline:3px solid var(--accent3);}
+  .disclaimer{font-size:.78rem; color:var(--muted); margin-top:22px; line-height:1.5; text-align:center;}
+  footer.note{text-align:center; color:var(--muted); font-size:.78rem; margin-top:30px;}
+  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
+
+  @media (max-width:520px){
+    h1{font-size:1.5rem;} .card{padding:18px;}
+    .style-name{min-width:110px; font-size:.82rem;}
+    .timeline-track{height:60px;}
+    .timeline-token{width:46px; height:46px; font-size:.65rem;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001s !important; animation-iteration-count:1 !important; transition-duration:.001s !important;}
+    .blob{animation:none;}
+  }
+</style>
+</head>
+<body data-mode="calm">
+<div class="ambient" aria-hidden="true">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+</div>
+
+<div id="app">
+  <header class="top">
+    <div class="brand"><span class="dot"></span> Cognitive Pattern Explorer</div>
+    <div class="mode-toggle" role="group" aria-label="Choose ambience mode">
+      <button id="calmBtn" class="active" aria-pressed="true">Calm Mode</button>
+      <button id="stressBtn" aria-pressed="false">Stress Mode</button>
+    </div>
+  </header>
+
+  <div class="progress-wrap" id="progressWrap" style="display:none;">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-labels">
+      <span class="step-pip" data-step="1">Chapter 1</span>
+      <span class="step-pip" data-step="2">Chapter 2</span>
+      <span class="step-pip" data-step="3">Chapter 3</span>
+      <span class="step-pip" data-step="4">Journal</span>
+    </div>
+  </div>
+
+  <!-- START SCREEN -->
+  <section class="screen visible" id="screen-start">
+    <div class="card">
+      <h1>Explore how you think, gently.</h1>
+      <p class="sub">This is a calm, exploratory journey through a few short scenarios and choices. There are no
+      right answers, no scores to pass, and nothing here is a clinical assessment — just reflective observations
+      about tendencies you might recognize in yourself.</p>
+      <div class="btn-row">
+        <button class="btn" id="startBtn">Begin the journey</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 1 -->
+  <section class="screen" id="screen-ch1">
+    <div class="card">
+      <h2>Chapter 1 — Discover Your Thinking Style</h2>
+      <p class="sub">Read each small scenario and choose what feels most like you. Go with your first instinct.</p>
+      <div class="scenario-block" id="ch1Block"></div>
+      <div class="btn-row">
+        <button class="btn secondary" id="ch1Back">Back</button>
+        <button class="btn" id="ch1Next" disabled>Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 2 -->
+  <section class="screen" id="screen-ch2">
+    <div class="card">
+      <h2>Chapter 2 — Choose Your Priorities</h2>
+      <p class="sub">Drag the cards (or use arrow keys after focusing one) to rank them from most to least important
+      to you when facing a decision.</p>
+      <div class="card-stage">
+        <ul class="draggable-list" id="priorityList" aria-label="Priority cards, drag to reorder"></ul>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" id="ch2Back">Back</button>
+        <button class="btn" id="ch2Next">Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAPTER 3 -->
+  <section class="screen" id="screen-ch3">
+    <div class="card">
+      <h2>Chapter 3 — Map Your Thinking</h2>
+      <p class="sub">Drag each token onto the timeline to show where your mind usually goes first when a
+      decision arises — from "Instinct" to "Deep Deliberation".</p>
+      <div id="ch3Timelines"></div>
+      <div class="btn-row">
+        <button class="btn secondary" id="ch3Back">Back</button>
+        <button class="btn" id="ch3Next">See My Reflection</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FINAL JOURNAL -->
+  <section class="screen" id="screen-final">
+    <div class="card">
+      <h2>Your Reflection Journal</h2>
+      <p class="sub">Here's a gentle mirror of the patterns you leaned toward today. These are tendencies,
+      not fixed traits — they can shift day to day.</p>
+      <div class="journal" id="journalResults"></div>
+      <div class="reflection-text" id="reflectionText"></div>
+      <label for="journalNotes" style="display:block; margin-top:18px; font-size:.9rem; color:var(--muted);">
+        Optional: jot down a thought about what resonated with you.
+      </label>
+      <textarea class="journal-textarea" id="journalNotes" placeholder="Write freely here..."></textarea>
+      <div class="btn-row">
+        <button class="btn secondary" id="restartBtn">Start Over</button>
+      </div>
+      <p class="disclaimer">This tool is for self-reflection and educational purposes only. It does not diagnose,
+      assess, or treat any mental health condition. If you have concerns about your wellbeing, please speak with a
+      qualified professional.</p>
+    </div>
+  </section>
+
+  <footer class="note">Runs entirely offline in your browser. Nothing is saved or sent anywhere.</footer>
+</div>
+
+<div aria-live="polite" class="sr-only" id="liveRegion"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- DATA ---------- */
+  const STYLES = {
+    analytical: "Analytical Thinker",
+    emotional: "Emotional Intuitive",
+    overthinking: "Overthinking Loop Style",
+    action: "Action-First Decision Maker",
+    balanced: "Balanced Reflective Thinker"
+  };
+
+  const CH1_SCENARIOS = [
+    {
+      q: "A friend asks for advice on a big life decision. Your first move is to...",
+      options: [
+        {text:"List out the pros and cons methodically.", style:"analytical"},
+        {text:"Tune into how they feel and ask about their gut reaction.", style:"emotional"},
+        {text:"Turn the problem over in your head many times before responding.", style:"overthinking"},
+        {text:"Suggest a first step they can try right away.", style:"action"}
+      ]
+    },
+    {
+      q: "You receive unexpected feedback at work. Internally, you...",
+      options: [
+        {text:"Break it down into specific, actionable points.", style:"analytical"},
+        {text:"Notice the emotional sting first, then process the content.", style:"emotional"},
+        {text:"Replay the conversation repeatedly, wondering what it really meant.", style:"overthinking"},
+        {text:"Decide quickly what to change and move on.", style:"action"},
+        {text:"Consider both the facts and how you feel before responding.", style:"balanced"}
+      ]
+    },
+    {
+      q: "Planning a trip, you tend to...",
+      options: [
+        {text:"Build a detailed spreadsheet of options and costs.", style:"analytical"},
+        {text:"Pick a destination based on the feeling it gives you.", style:"emotional"},
+        {text:"Keep reconsidering the choice even after booking.", style:"overthinking"},
+        {text:"Book something spontaneously and figure out details later.", style:"action"}
+      ]
+    },
+    {
+      q: "When a plan falls apart at the last minute, you...",
+      options: [
+        {text:"Assess what changed and rebuild a new plan step by step.", style:"analytical"},
+        {text:"Feel the disappointment fully before thinking about next steps.", style:"emotional"},
+        {text:"Worry about every possible way it could go wrong next.", style:"overthinking"},
+        {text:"Adapt on the spot and act immediately.", style:"action"},
+        {text:"Pause, weigh options calmly, then choose a balanced path.", style:"balanced"}
+      ]
+    }
+  ];
+
+  const PRIORITY_CARDS = [
+    {id:"logic", label:"Clear logic and evidence", style:"analytical"},
+    {id:"feel", label:"How it feels to everyone involved", style:"emotional"},
+    {id:"certainty", label:"Being certain before acting", style:"overthinking"},
+    {id:"speed", label:"Moving quickly and adjusting later", style:"action"},
+    {id:"balance", label:"Weighing all sides evenly", style:"balanced"}
+  ];
+
+  const TIMELINE_ITEMS = [
+    {id:"t1", label:"A sudden change of plans", style:["action","overthinking","analytical","emotional","balanced"]},
+    {id:"t2", label:"A disagreement with someone close", style:["emotional","overthinking","analytical","action","balanced"]},
+    {id:"t3", label:"A big purchase decision", style:["analytical","overthinking","action","emotional","balanced"]}
+  ];
+  // zone order left->right: instinct, action, balanced, analytical, overthinking(deliberation)
+  const TIMELINE_ZONES = ["action","emotional","balanced","analytical","overthinking"];
+  const ZONE_LABELS = ["Instinct","Feeling","Balance","Logic","Deep Deliberation"];
+
+  const REFLECTIONS = {
+    analytical: "You often approach situations by breaking them into clear, logical pieces. This suggests you find comfort in structure and evidence — a strength when facing complex problems, though it can help to also check in with how a decision feels.",
+    emotional: "You often lead with how something feels before analyzing it further. This suggests you're attuned to the emotional undercurrents of a situation, which builds connection — though pairing this with a moment of logical review can add balance.",
+    overthinking: "You often find yourself revisiting a decision multiple times. This suggests a strong desire to get things right, which shows care — though it may sometimes be worth noticing when 'enough thinking' has already happened.",
+    action: "You often move toward action quickly once a decision starts forming. This suggests confidence and momentum, which helps you make progress — though occasionally slowing down for a second look can prevent avoidable missteps.",
+    balanced: "You often weigh logic and emotion together before deciding. This suggests a flexible, adaptive style that draws from multiple perspectives — a pattern that tends to serve well across many situations."
+  };
+
+  /* ---------- STATE ---------- */
+  const state = {
+    step: 0, // 0 start, 1 ch1, 2 ch2, 3 ch3, 4 final
+    ch1Answers: [], // array of style strings
+    priorityOrder: PRIORITY_CARDS.map(c => c.id),
+    timelinePlacements: {} // itemId -> zoneIndex (0-4)
+  };
+
+  const scores = () => {
+    const tally = {analytical:0, emotional:0, overthinking:0, action:0, balanced:0};
+    // Ch1: each answer = 3 points
+    state.ch1Answers.forEach(s => { if(s) tally[s] += 3; });
+    // Ch2: priority order -> higher rank (earlier) = more points
+    state.priorityOrder.forEach((id, idx) => {
+      const card = PRIORITY_CARDS.find(c => c.id === id);
+      const weight = state.priorityOrder.length - idx; // top = highest
+      tally[card.style] += weight;
+    });
+    // Ch3: zone mapping -> points based on which style that zone represents for that item
+    TIMELINE_ITEMS.forEach(item => {
+      const zoneIdx = state.timelinePlacements[item.id];
+      if(zoneIdx === undefined) return;
+      const zoneStyle = TIMELINE_ZONES[zoneIdx];
+      tally[zoneStyle] += 2;
+    });
+    const total = Object.values(tally).reduce((a,b)=>a+b,0) || 1;
+    const pct = {};
+    Object.keys(tally).forEach(k => pct[k] = Math.round((tally[k]/total)*100));
+    return {tally, pct};
+  };
+
+  /* ---------- UTIL ---------- */
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const announce = msg => { const lr = $("#liveRegion"); lr.textContent = ""; setTimeout(()=>lr.textContent = msg, 30); };
+
+  const STEP_NAMES = ["start","ch1","ch2","ch3","final"];
+  function showScreen(step){
+    state.step = step;
+    STEP_NAMES.forEach((name,i) => {
+      const el = $("#screen-"+name);
+      el.classList.toggle("visible", i === step);
+    });
+    const progressWrap = $("#progressWrap");
+    if(step === 0){ progressWrap.style.display = "none"; }
+    else {
+      progressWrap.style.display = "block";
+      const pct = (step/4)*100;
+      $("#progressFill").style.width = pct+"%";
+      $$(".step-pip").forEach(p => p.classList.toggle("active", parseInt(p.dataset.step,10) === step));
+    }
+    window.scrollTo({top:0, behavior: (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto':'smooth')});
+  }
+
+  /* ---------- MODE TOGGLE ---------- */
+  $("#calmBtn").addEventListener("click", () => setMode("calm"));
+  $("#stressBtn").addEventListener("click", () => setMode("stress"));
+  function setMode(mode){
+    document.body.dataset.mode = mode;
+    $("#calmBtn").classList.toggle("active", mode==="calm");
+    $("#stressBtn").classList.toggle("active", mode==="stress");
+    $("#calmBtn").setAttribute("aria-pressed", mode==="calm");
+    $("#stressBtn").setAttribute("aria-pressed", mode==="stress");
+  }
+
+  /* ---------- START ---------- */
+  $("#startBtn").addEventListener("click", () => { buildCh1(); showScreen(1); });
+
+  /* ---------- CHAPTER 1 ---------- */
+  let ch1Index = 0;
+  function buildCh1(){
+    ch1Index = 0;
+    state.ch1Answers = new Array(CH1_SCENARIOS.length).fill(null);
+    renderCh1Question();
+  }
+  function renderCh1Question(){
+    const container = $("#ch1Block");
+    const scenario = CH1_SCENARIOS[ch1Index];
+    container.innerHTML = "";
+    const qEl = document.createElement("div");
+    qEl.className = "scenario-q";
+    qEl.textContent = `(${ch1Index+1}/${CH1_SCENARIOS.length}) ${scenario.q}`;
+    container.appendChild(qEl);
+
+    const optWrap = document.createElement("div");
+    optWrap.className = "options";
+    scenario.options.forEach((opt, i) => {
+      const btn = document.createElement("button");
+      btn.className = "opt";
+      btn.type = "button";
+      btn.textContent = opt.text;
+      btn.setAttribute("role","radio");
+      const chosen = state.ch1Answers[ch1Index];
+      const isSelected = chosen === opt.style && btn.textContent === opt.text;
+      btn.setAttribute("aria-checked", String(false));
+      btn.addEventListener("click", () => {
+        Array.from(optWrap.children).forEach(c => { c.classList.remove("selected"); c.setAttribute("aria-checked","false"); });
+        btn.classList.add("selected");
+        btn.setAttribute("aria-checked","true");
+        state.ch1Answers[ch1Index] = opt.style;
+        $("#ch1Next").disabled = false;
+      });
+      optWrap.appendChild(btn);
+    });
+    container.appendChild(optWrap);
+    $("#ch1Next").disabled = state.ch1Answers[ch1Index] === null;
+    $("#ch1Next").textContent = ch1Index === CH1_SCENARIOS.length - 1 ? "Continue to Chapter 2" : "Next scenario";
+    $("#ch1Back").textContent = ch1Index === 0 ? "Back to Start" : "Previous scenario";
+  }
+  $("#ch1Next").addEventListener("click", () => {
+    if(ch1Index < CH1_SCENARIOS.length - 1){ ch1Index++; renderCh1Question(); announce("Next scenario loaded."); }
+    else { buildCh2(); showScreen(2); }
+  });
+  $("#ch1Back").addEventListener("click", () => {
+    if(ch1Index === 0){ showScreen(0); }
+    else { ch1Index--; renderCh1Question(); }
+  });
+
+  /* ---------- CHAPTER 2: DRAG-DROP PRIORITY CARDS ---------- */
+  function buildCh2(){
+    const list = $("#priorityList");
+    list.innerHTML = "";
+    state.priorityOrder.forEach((id, idx) => {
+      const card = PRIORITY_CARDS.find(c => c.id === id);
+      list.appendChild(makeDragCard(card, idx));
+    });
+  }
+  function makeDragCard(card, idx){
+    const li = document.createElement("li");
+    li.className = "drag-card";
+    li.draggable = true;
+    li.tabIndex = 0;
+    li.dataset.id = card.id;
+    li.setAttribute("role","option");
+    li.setAttribute("aria-label", `${card.label}, rank ${idx+1}. Use arrow keys to move.`);
+    li.innerHTML = `<span class="rank-badge">${idx+1}</span><span class="handle" aria-hidden="true">&#9776;</span><span>${card.label}</span>`;
+
+    li.addEventListener("dragstart", e => {
+      li.classList.add("dragging");
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", card.id);
+    });
+    li.addEventListener("dragend", () => { li.classList.remove("dragging"); syncPriorityOrderFromDOM(); });
+
+    // keyboard reordering
+    li.addEventListener("keydown", e => {
+      const listEl = $("#priorityList");
+      const items = Array.from(listEl.children);
+      const i = items.indexOf(li);
+      if(e.key === "ArrowUp" && i > 0){
+        e.preventDefault();
+        listEl.insertBefore(li, items[i-1]);
+        syncPriorityOrderFromDOM();
+        li.focus();
+      } else if(e.key === "ArrowDown" && i < items.length - 1){
+        e.preventDefault();
+        listEl.insertBefore(items[i+1], li);
+        syncPriorityOrderFromDOM();
+        li.focus();
+      }
+    });
+
+    // touch fallback
+    let touchStartY = null; let touchGhostIndex = null;
+    li.addEventListener("touchstart", e => {
+      touchStartY = e.touches[0].clientY;
+      li.classList.add("dragging");
+    }, {passive:true});
+    li.addEventListener("touchmove", e => {
+      if(touchStartY === null) return;
+      const touchY = e.touches[0].clientY;
+      const listEl = $("#priorityList");
+      const items = Array.from(listEl.children).filter(c => c !== li);
+      for(const item of items){
+        const rect = item.getBoundingClientRect();
+        if(touchY > rect.top && touchY < rect.bottom){
+          const rectMid = rect.top + rect.height/2;
+          if(touchY < rectMid) listEl.insertBefore(li, item);
+          else listEl.insertBefore(li, item.nextSibling);
+          break;
+        }
+      }
+    }, {passive:true});
+    li.addEventListener("touchend", () => {
+      touchStartY = null;
+      li.classList.remove("dragging");
+      syncPriorityOrderFromDOM();
+    });
+
+    return li;
+  }
+  const priorityListEl = () => $("#priorityList");
+  priorityListEl().addEventListener("dragover", e => {
+    e.preventDefault();
+    const listEl = $("#priorityList");
+    const dragging = listEl.querySelector(".dragging");
+    if(!dragging) return;
+    const afterEl = getDragAfterElement(listEl, e.clientY);
+    if(afterEl == null) listEl.appendChild(dragging);
+    else listEl.insertBefore(dragging, afterEl);
+  });
+  function getDragAfterElement(container, y){
+    const els = Array.from(container.querySelectorAll(".drag-card:not(.dragging)"));
+    return els.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height/2;
+      if(offset < 0 && offset > closest.offset) return {offset, element: child};
+      return closest;
+    }, {offset: -Infinity}).element;
+  }
+  function syncPriorityOrderFromDOM(){
+    const items = Array.from($("#priorityList").children);
+    state.priorityOrder = items.map(li => li.dataset.id);
+    items.forEach((li, idx) => {
+      li.querySelector(".rank-badge").textContent = idx+1;
+      li.setAttribute("aria-label", li.querySelector("span:last-child").textContent + `, rank ${idx+1}. Use arrow keys to move.`);
+    });
+  }
+  $("#ch2Back").addEventListener("click", () => { ch1Index = CH1_SCENARIOS.length - 1; renderCh1Question(); showScreen(1); });
+  $("#ch2Next").addEventListener("click", () => { buildCh3(); showScreen(3); });
+
+  /* ---------- CHAPTER 3: TIMELINE DRAG ---------- */
+  function buildCh3(){
+    state.timelinePlacements = {};
+    const wrap = $("#ch3Timelines");
+    wrap.innerHTML = "";
+    TIMELINE_ITEMS.forEach(item => {
+      const block = document.createElement("div");
+      block.className = "timeline-wrap";
+      block.innerHTML = `
+        <div class="timeline-item-label">${item.label}</div>
+        <div class="timeline-track" data-item="${item.id}" role="group" aria-label="Timeline for: ${item.label}"></div>
+        <div class="timeline-scale">${ZONE_LABELS.map(l=>`<span>${l}</span>`).join("")}</div>
+      `;
+      wrap.appendChild(block);
+      const track = block.querySelector(".timeline-track");
+      const token = document.createElement("div");
+      token.className = "timeline-token";
+      token.textContent = "Drag me";
+      token.draggable = true;
+      token.tabIndex = 0;
+      token.dataset.item = item.id;
+      token.setAttribute("aria-label", `Placement token for ${item.label}. Use arrow keys to move between zones: ${ZONE_LABELS.join(", ")}.`);
+      token.style.left = "8px";
+      let currentZone = null;
+
+      function placeAtZone(zoneIdx){
+        currentZone = zoneIdx;
+        const trackWidth = track.clientWidth || 300;
+        const usable = trackWidth - 54 - 16;
+        const step = usable / (TIMELINE_ZONES.length - 1);
+        const left = 8 + step*zoneIdx;
+        token.style.left = left + "px";
+        token.textContent = ZONE_LABELS[zoneIdx];
+        state.timelinePlacements[item.id] = zoneIdx;
+        checkCh3Complete();
+      }
+
+      token.addEventListener("dragstart", e => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", item.id);
+      });
+      track.addEventListener("dragover", e => e.preventDefault());
+      track.addEventListener("drop", e => {
+        e.preventDefault();
+        const rect = track.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const zoneIdx = xToZone(x, rect.width);
+        placeAtZone(zoneIdx);
+      });
+
+      token.addEventListener("keydown", e => {
+        let zi = currentZone === null ? 0 : currentZone;
+        if(e.key === "ArrowRight" && zi < TIMELINE_ZONES.length-1){ e.preventDefault(); placeAtZone(zi+1); }
+        else if(e.key === "ArrowLeft" && zi > 0){ e.preventDefault(); placeAtZone(zi-1); }
+        else if(e.key === "Enter" || e.key === " "){ e.preventDefault(); placeAtZone(zi); }
+      });
+
+      // touch fallback
+      token.addEventListener("touchmove", e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = track.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const zoneIdx = xToZone(x, rect.width);
+        placeAtZone(zoneIdx);
+      }, {passive:false});
+
+      track.appendChild(token);
+    });
+  }
+  function xToZone(x, width){
+    const ratio = Math.max(0, Math.min(1, x/width));
+    return Math.round(ratio * (TIMELINE_ZONES.length - 1));
+  }
+  function checkCh3Complete(){
+    const done = TIMELINE_ITEMS.every(item => state.timelinePlacements[item.id] !== undefined);
+    $("#ch3Next").disabled = false; // allow proceeding even if partially done, per exploratory tone
+  }
+  $("#ch3Back").addEventListener("click", () => { buildCh2(); showScreen(2); });
+  $("#ch3Next").addEventListener("click", () => { buildFinal(); showScreen(4); });
+
+  /* ---------- FINAL JOURNAL ---------- */
+  function buildFinal(){
+    const {pct} = scores();
+    const sorted = Object.keys(pct).sort((a,b) => pct[b]-pct[a]);
+    const top = sorted[0];
+
+    const results = $("#journalResults");
+    results.innerHTML = "";
+    sorted.forEach(styleKey => {
+      const row = document.createElement("div");
+      row.className = "insight-row";
+      row.innerHTML = `
+        <span class="style-name">${STYLES[styleKey]}</span>
+        <span class="bar-bg"><span class="bar-fill" data-pct="${pct[styleKey]}"></span></span>
+        <span class="pct">${pct[styleKey]}%</span>
+      `;
+      results.appendChild(row);
+    });
+    // animate bars
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        $$(".bar-fill").forEach(bar => { bar.style.width = bar.dataset.pct + "%"; });
+      }, 80);
+    });
+
+    $("#reflectionText").innerHTML = `<strong>${STYLES[top]}</strong><br>${REFLECTIONS[top]}`;
+    announce("Your reflection journal is ready.");
+  }
+
+  $("#restartBtn").addEventListener("click", () => {
+    state.ch1Answers = [];
+    state.priorityOrder = PRIORITY_CARDS.map(c => c.id);
+    state.timelinePlacements = {};
+    $("#journalNotes").value = "";
+    showScreen(0);
+  });
+
+  /* ---------- INIT ---------- */
+  showScreen(0);
+})();
+</script>
+</body>
+</html>
