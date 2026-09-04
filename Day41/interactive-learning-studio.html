@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Python for Automation & Scripting — Interactive Learning Studio</title>
+<style>
+:root{
+  --bg:#12161c;
+  --bg-panel:#1a212b;
+  --bg-panel-2:#212a36;
+  --bg-code:#0d1117;
+  --border:#2c3644;
+  --text:#e7e5e0;
+  --text-dim:#8b93a0;
+  --text-faint:#5c6570;
+  --amber:#e8a33d;
+  --amber-dim:#a97a30;
+  --teal:#4fb3a9;
+  --success:#6fcf97;
+  --error:#eb5757;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --radius: 3px;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+body.light{
+  --bg:#f4f2ee;
+  --bg-panel:#ffffff;
+  --bg-panel-2:#eeece6;
+  --bg-code:#1c2128;
+  --border:#dcd8cf;
+  --text:#1c1f24;
+  --text-dim:#5a5f66;
+  --text-faint:#8a8f96;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:0.01ms !important; transition-duration:0.01ms !important;}
+}
+::selection{background:var(--amber); color:#12161c;}
+a{color:var(--teal);}
+button{font-family:inherit;}
+:focus-visible{outline:2px solid var(--amber); outline-offset:2px;}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 20px;
+  background:var(--bg-code);
+  border-bottom:1px solid var(--border);
+  font-family:var(--mono);
+  font-size:13px;
+  color:#8b93a0;
+}
+.topbar .prompt{color:var(--success);}
+.topbar .cmd{color:#e7e5e0;}
+.topbar-right{display:flex; gap:14px; align-items:center;}
+.topbar button.icon-btn{
+  background:none; border:1px solid var(--border); color:var(--text-dim);
+  padding:5px 10px; border-radius:var(--radius); cursor:pointer; font-size:12px;
+  font-family:var(--mono);
+}
+.topbar button.icon-btn:hover{border-color:var(--amber); color:var(--amber);}
+
+/* ---------- Layout shell ---------- */
+.shell{display:flex; min-height:calc(100vh - 40px); max-width:1400px; margin:0 auto;}
+.sidebar{
+  width:250px; flex-shrink:0; padding:24px 16px;
+  border-right:1px solid var(--border);
+  position:sticky; top:41px; align-self:flex-start;
+  height:calc(100vh - 41px); overflow-y:auto;
+}
+.sidebar h3{
+  font-family:var(--mono); font-size:11px; letter-spacing:.04em;
+  color:var(--text-faint); margin:0 0 10px 4px; font-weight:600;
+}
+.nav-item{
+  display:flex; align-items:center; gap:10px;
+  padding:9px 10px; border-radius:var(--radius); cursor:pointer;
+  color:var(--text-dim); font-size:13.5px; margin-bottom:2px;
+  border-left:2px solid transparent;
+  transition:background .15s, color .15s;
+}
+.nav-item:hover{background:var(--bg-panel);}
+.nav-item.active{background:var(--bg-panel-2); color:var(--text); border-left-color:var(--amber);}
+.nav-item .dot{
+  width:16px; height:16px; border-radius:50%; flex-shrink:0;
+  border:1.5px solid var(--text-faint); display:flex; align-items:center; justify-content:center;
+  font-size:9px; color:var(--text-faint); font-family:var(--mono);
+}
+.nav-item.done .dot{background:var(--success); border-color:var(--success); color:#0d1117;}
+.nav-item.locked{opacity:.45; cursor:not-allowed;}
+.sidebar-progress{margin-top:22px; padding-top:18px; border-top:1px solid var(--border);}
+.sidebar-progress .label{font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:6px; display:flex; justify-content:space-between;}
+.progress-track{height:6px; background:var(--bg-panel-2); border-radius:3px; overflow:hidden;}
+.progress-fill{height:100%; background:linear-gradient(90deg, var(--amber), var(--teal)); width:0%; transition:width .5s ease;}
+.badges{margin-top:16px; display:flex; flex-wrap:wrap; gap:6px;}
+.badge{
+  font-size:15px; width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:var(--bg-panel-2); border:1px solid var(--border); opacity:.25; filter:grayscale(1);
+}
+.badge.earned{opacity:1; filter:none; border-color:var(--amber);}
+
+.main{flex:1; padding:0; min-width:0;}
+.view{display:none; padding:40px 48px 80px;}
+.view.active{display:block; animation:fadein .3s ease;}
+@keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+@media(max-width:880px){
+  .shell{flex-direction:column;}
+  .sidebar{width:100%; position:relative; top:0; height:auto; border-right:none; border-bottom:1px solid var(--border);}
+  .view{padding:28px 20px 60px;}
+}
+
+/* ---------- Typography ---------- */
+.eyebrow{font-family:var(--mono); font-size:12px; color:var(--amber); margin-bottom:8px;}
+h1{font-size:clamp(28px,4vw,42px); margin:0 0 14px; letter-spacing:-.01em; font-weight:700;}
+h2.module-title{font-size:clamp(22px,3vw,30px); margin:0 0 6px; font-weight:700;}
+h3{font-size:18px; margin:28px 0 10px; font-weight:600;}
+p{color:var(--text-dim); max-width:74ch;}
+.lead{font-size:16.5px; color:var(--text-dim); max-width:68ch;}
+
+/* ---------- Intro page ---------- */
+.intro-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:32px 0;}
+.info-card{
+  background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px;
+}
+.info-card .k{font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:6px;}
+.info-card .v{font-size:14.5px; color:var(--text);}
+.info-card ul{margin:4px 0 0; padding-left:18px; font-size:14px; color:var(--text-dim);}
+.obj-list{list-style:none; padding:0; margin:18px 0; display:grid; gap:8px;}
+.obj-list li{display:flex; gap:10px; align-items:flex-start; font-size:14.5px; color:var(--text-dim);}
+.obj-list li::before{content:"›"; color:var(--amber); font-weight:700; font-family:var(--mono);}
+.reward-strip{
+  margin-top:30px; padding:18px 20px; background:var(--bg-panel); border:1px dashed var(--border); border-radius:var(--radius);
+  display:flex; gap:18px; align-items:center; flex-wrap:wrap;
+}
+.reward-strip .badge-preview{display:flex; gap:8px; font-size:20px;}
+.start-btn{
+  margin-top:28px; background:var(--amber); color:#181008; border:none; padding:13px 26px;
+  font-size:15px; font-weight:700; border-radius:var(--radius); cursor:pointer; font-family:var(--sans);
+  transition:transform .12s ease, background .15s;
+}
+.start-btn:hover{background:#f2b455; transform:translateY(-1px);}
+.start-btn:active{transform:translateY(0);}
+
+/* ---------- Module content blocks ---------- */
+.module-meta{font-family:var(--mono); font-size:12px; color:var(--text-faint); margin-bottom:22px;}
+.section-block{margin:26px 0;}
+.callout{
+  border-left:3px solid var(--teal); background:var(--bg-panel); padding:14px 18px; border-radius:0 var(--radius) var(--radius) 0;
+  margin:18px 0; font-size:14.5px; color:var(--text-dim);
+}
+.callout.warn{border-left-color:var(--amber);}
+.callout.warn strong{color:var(--amber);}
+.callout strong{color:var(--teal); display:block; margin-bottom:4px; font-size:13px;}
+
+.code-block{
+  background:var(--bg-code); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px; overflow-x:auto; font-family:var(--mono); font-size:13px; margin:14px 0;
+  color:#c9d1d9; position:relative;
+}
+.code-block .kw{color:#ff7b72;} .code-block .fn{color:#d2a8ff;} .code-block .str{color:#a5d6ff;}
+.code-block .com{color:#8b949e;} .code-block .num{color:#79c0ff;} .code-block .bi{color:#79c0ff;}
+.code-label{font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:-4px;}
+
+.compare-table{width:100%; border-collapse:collapse; margin:16px 0; font-size:13.5px;}
+.compare-table th, .compare-table td{border:1px solid var(--border); padding:9px 12px; text-align:left; vertical-align:top;}
+.compare-table th{background:var(--bg-panel-2); color:var(--amber); font-family:var(--mono); font-size:12px; font-weight:600;}
+.compare-table td{color:var(--text-dim);}
+
+.analogy-box{
+  display:flex; gap:14px; align-items:flex-start; background:var(--bg-panel); border:1px solid var(--border);
+  border-radius:var(--radius); padding:16px 18px; margin:16px 0;
+}
+.analogy-box .icon{font-size:22px; flex-shrink:0;}
+
+.diagram-wrap{background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px; margin:18px 0; overflow-x:auto;}
+
+.takeaways{background:var(--bg-panel-2); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px; margin:22px 0;}
+.takeaways h4{margin:0 0 10px; font-size:13px; font-family:var(--mono); color:var(--success); text-transform:none;}
+.takeaways ul{margin:0; padding-left:18px; font-size:14px; color:var(--text-dim);}
+.takeaways li{margin-bottom:5px;}
+
+.misconceptions{margin:16px 0;}
+.misc-item{border:1px solid var(--border); border-radius:var(--radius); margin-bottom:8px; overflow:hidden;}
+.misc-head{padding:11px 16px; background:var(--bg-panel); cursor:pointer; display:flex; justify-content:space-between; align-items:center; font-size:14px;}
+.misc-head::after{content:"+"; font-family:var(--mono); color:var(--text-faint);}
+.misc-item.open .misc-head::after{content:"–";}
+.misc-body{max-height:0; overflow:hidden; transition:max-height .25s ease;}
+.misc-item.open .misc-body{max-height:400px;}
+.misc-body-inner{padding:2px 16px 14px; font-size:13.5px; color:var(--text-dim);}
+.misc-head .x{color:var(--error); font-family:var(--mono); margin-right:8px;}
+.misc-head .ok{color:var(--success); font-family:var(--mono);}
+
+/* ---------- Exercise ---------- */
+.exercise{
+  background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin:20px 0;
+}
+.exercise .ex-tag{font-family:var(--mono); font-size:11px; color:var(--amber); margin-bottom:8px;}
+.exercise textarea{
+  width:100%; min-height:110px; background:var(--bg-code); color:#c9d1d9; border:1px solid var(--border);
+  border-radius:var(--radius); font-family:var(--mono); font-size:13px; padding:12px; resize:vertical; margin-top:10px;
+}
+.ex-btn-row{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+.btn-secondary{
+  background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:8px 16px;
+  border-radius:var(--radius); cursor:pointer; font-size:13px;
+}
+.btn-secondary:hover{border-color:var(--teal); color:var(--teal);}
+.ex-feedback{margin-top:12px; font-size:13.5px; padding:10px 14px; border-radius:var(--radius); display:none;}
+.ex-feedback.show{display:block;}
+.ex-feedback.ok{background:rgba(111,207,151,.1); border:1px solid var(--success); color:var(--success);}
+.ex-feedback.hint{background:rgba(232,163,61,.1); border:1px solid var(--amber); color:var(--amber);}
+
+/* drag-drop pipeline exercise */
+.pipeline-ex{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px;}
+.pipeline-slot{min-width:150px; min-height:44px; border:1px dashed var(--border); border-radius:var(--radius); display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-size:12px; color:var(--text-faint);}
+.pipeline-pool{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+.pipeline-chip{background:var(--bg-code); border:1px solid var(--border); padding:8px 12px; border-radius:var(--radius); font-family:var(--mono); font-size:12px; cursor:grab; color:var(--teal);}
+.pipeline-chip.placed{opacity:.35; cursor:not-allowed;}
+.pipeline-slot.filled{border-style:solid; color:var(--text); border-color:var(--teal);}
+
+/* ---------- Quiz ---------- */
+.quiz-wrap{margin-top:44px; padding-top:30px; border-top:1px solid var(--border);}
+.quiz-header{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:16px; flex-wrap:wrap; gap:8px;}
+.quiz-q{background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin-bottom:16px;}
+.quiz-q .qn{font-family:var(--mono); font-size:11px; color:var(--text-faint); margin-bottom:8px;}
+.quiz-q p.qtext{color:var(--text); font-size:15px; margin:0 0 14px;}
+.opt{
+  display:block; width:100%; text-align:left; background:var(--bg-panel-2); border:1px solid var(--border);
+  color:var(--text-dim); padding:11px 14px; border-radius:var(--radius); margin-bottom:8px; cursor:pointer; font-size:13.5px;
+  transition:border-color .15s, background .15s;
+}
+.opt:hover:not(.disabled){border-color:var(--teal);}
+.opt.correct{border-color:var(--success); background:rgba(111,207,151,.12); color:var(--success);}
+.opt.incorrect{border-color:var(--error); background:rgba(235,87,87,.12); color:var(--error);}
+.opt.disabled{cursor:default;}
+.q-explain{display:none; margin-top:10px; padding:10px 14px; background:var(--bg); border-radius:var(--radius); font-size:13px; color:var(--text-dim); border-left:3px solid var(--teal);}
+.q-explain.show{display:block;}
+.quiz-submit{margin-top:8px;}
+.quiz-result{
+  display:none; margin-top:20px; padding:22px; text-align:center; background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius);
+}
+.quiz-result.show{display:block;}
+.quiz-result .score{font-size:38px; font-weight:700; font-family:var(--mono); color:var(--amber);}
+.quiz-result p{margin:6px auto 16px;}
+.unlock-btn{background:var(--teal); color:#08201d; border:none; padding:11px 22px; border-radius:var(--radius); font-weight:700; cursor:pointer; font-size:14px;}
+.unlock-btn:hover{background:#63c5bb;}
+.retry-btn{margin-left:10px;}
+
+/* ---------- Final / resources ---------- */
+.resource-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin:18px 0 30px;}
+.resource-card{background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px;}
+.resource-card h4{margin:0 0 10px; font-size:13px; font-family:var(--mono); color:var(--amber);}
+.resource-card ul{margin:0; padding-left:18px; font-size:13.5px; color:var(--text-dim);}
+.resource-card li{margin-bottom:6px;}
+.keyword-chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+.kw-chip{background:var(--bg-code); border:1px solid var(--border); color:var(--teal); font-family:var(--mono); font-size:12px; padding:6px 10px; border-radius:var(--radius);}
+.print-btn{margin-top:8px;}
+.cheat-sheet{background:var(--bg-panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; margin:18px 0;}
+.cheat-sheet table{width:100%; border-collapse:collapse; font-size:13px;}
+.cheat-sheet td, .cheat-sheet th{border-bottom:1px solid var(--border); padding:7px 10px; text-align:left;}
+.cheat-sheet th{color:var(--amber); font-family:var(--mono); font-size:11px;}
+.cheat-sheet code{font-family:var(--mono); color:var(--teal);}
+
+@media print{
+  .sidebar, .topbar, .quiz-wrap, .exercise, .start-btn, .unlock-btn, button{display:none !important;}
+  .view{display:block !important; padding:10px !important;}
+  body{background:#fff; color:#000;}
+}
+
+.final-challenge{background:var(--bg-panel); border:2px solid var(--amber); border-radius:var(--radius); padding:22px 24px; margin:20px 0;}
+.final-challenge .ftag{font-family:var(--mono); font-size:11px; color:var(--amber); margin-bottom:8px;}
+.complete-banner{
+  text-align:center; padding:50px 20px; background:linear-gradient(180deg, rgba(232,163,61,.08), transparent);
+  border-radius:var(--radius); margin-bottom:20px; display:none;
+}
+.complete-banner.show{display:block;}
+.complete-banner .trophy{font-size:48px; margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><span class="prompt">$</span> <span class="cmd">python automation_studio.py</span> <span style="color:var(--text-faint)">--topic "Python for Automation &amp; Scripting"</span></div>
+  <div class="topbar-right">
+    <button class="icon-btn" id="printBtn" title="Print / save notes">Print notes</button>
+    <button class="icon-btn" id="themeBtn" title="Toggle theme">Light mode</button>
+  </div>
+</div>
+
+<div class="shell">
+  <nav class="sidebar">
+    <h3>Course map</h3>
+    <div class="nav-item" data-view="intro"><span class="dot">i</span> Introduction</div>
+    <div class="nav-item" data-view="m1"><span class="dot">1</span> Module 1 · Foundations</div>
+    <div class="nav-item locked" data-view="m2"><span class="dot">2</span> Module 2 · Files &amp; Data</div>
+    <div class="nav-item locked" data-view="m3"><span class="dot">3</span> Module 3 · Real-World Automation</div>
+    <div class="nav-item locked" data-view="m4"><span class="dot">4</span> Module 4 · Mastery &amp; Resilience</div>
+    <div class="nav-item locked" data-view="final"><span class="dot">★</span> Final Challenge</div>
+
+    <div class="sidebar-progress">
+      <div class="label"><span>Progress</span><span id="progressPct">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="badges" id="badgeRow">
+        <div class="badge" data-badge="m1" title="Script Starter">🌱</div>
+        <div class="badge" data-badge="m2" title="File Wrangler">📁</div>
+        <div class="badge" data-badge="m3" title="Automator">⚙️</div>
+        <div class="badge" data-badge="m4" title="Resilience Engineer">🛡️</div>
+        <div class="badge" data-badge="final" title="Automation Master">🏆</div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main">
+
+    <!-- ===================== INTRO ===================== -->
+    <section class="view active" id="view-intro">
+      <div class="eyebrow">INTERACTIVE LEARNING STUDIO</div>
+      <h1>Python for Automation &amp; Scripting</h1>
+      <p class="lead">Turn repetitive, manual computer work into scripts that run themselves — organizing files, talking to the web, reading spreadsheets, and reacting to errors without you standing over them.</p>
+
+      <div class="intro-grid">
+        <div class="info-card">
+          <div class="k">Estimated time</div>
+          <div class="v">2.5 – 3.5 hours, self-paced</div>
+        </div>
+        <div class="info-card">
+          <div class="k">Prerequisites</div>
+          <div class="v">Basic Python syntax (variables, loops, functions). No automation experience needed.</div>
+        </div>
+        <div class="info-card">
+          <div class="k">Format</div>
+          <div class="v">4 modules → quiz after each → final challenge</div>
+        </div>
+        <div class="info-card">
+          <div class="k">You'll build</div>
+          <div class="v">A file organizer, a resilient script, and a small automation pipeline</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top:6px;">Learning objectives</h3>
+      <ul class="obj-list">
+        <li>Explain why automation scripts differ from ordinary programs, and design one around a trigger and an outcome.</li>
+        <li>Read, write, move, and rename files and folders programmatically using <code>os</code>, <code>shutil</code>, and <code>pathlib</code>.</li>
+        <li>Parse and generate structured data — CSV, JSON, and plain text logs — as part of a script.</li>
+        <li>Automate an external task: fetching a web page, sending an email, or running on a schedule.</li>
+        <li>Handle failure gracefully with <code>try/except</code>, logging, retries, and idempotent design, so scripts survive real-world messiness.</li>
+      </ul>
+
+      <div class="reward-strip">
+        <div class="badge-preview">🌱 📁 ⚙️ 🛡️ 🏆</div>
+        <div style="font-size:13.5px; color:var(--text-dim);">Earn a badge after each module quiz (70%+ to pass) and a final "Automation Master" badge for completing the challenge. Progress is tracked live in the sidebar.</div>
+      </div>
+
+      <button class="start-btn" id="startBtn">Start Module 1 →</button>
+    </section>
+
+    <!-- ===================== MODULE 1 ===================== -->
+    <section class="view" id="view-m1">
+      <div class="module-meta">MODULE 1 / 4 · FOUNDATIONS</div>
+      <h2 class="module-title">What makes a script "automation"?</h2>
+      <p class="lead">Before writing any code, you need the mental model: an automation script is a small, unattended program built around a trigger, a job, and an outcome — not just "a Python file that does something."</p>
+
+      <div class="section-block">
+        <h3>The trigger → job → outcome model</h3>
+        <p>Every automation has three parts: something that starts it (a trigger — you running it, a schedule, a new file appearing), the work it performs (the job), and the change it leaves behind (the outcome — a file moved, an email sent, a report generated). Ordinary scripts you write while learning Python usually skip the "trigger" question entirely, because you're the trigger — you hit run. A real automation has to work when you're <em>not</em> watching it run.</p>
+
+        <div class="diagram-wrap">
+          <svg viewBox="0 0 640 140" width="100%" style="max-width:640px; display:block; margin:0 auto;">
+            <defs>
+              <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#4fb3a9"/>
+              </marker>
+            </defs>
+            <g font-family="ui-monospace, monospace" font-size="12">
+              <rect x="20" y="45" width="150" height="50" rx="3" fill="#212a36" stroke="#e8a33d"/>
+              <text x="95" y="65" fill="#e8a33d" text-anchor="middle">TRIGGER</text>
+              <text x="95" y="82" fill="#8b93a0" text-anchor="middle" font-size="10">schedule / file / manual</text>
+
+              <line x1="170" y1="70" x2="245" y2="70" stroke="#4fb3a9" stroke-width="2" marker-end="url(#arrow)"/>
+
+              <rect x="245" y="45" width="150" height="50" rx="3" fill="#212a36" stroke="#4fb3a9"/>
+              <text x="320" y="65" fill="#4fb3a9" text-anchor="middle">JOB</text>
+              <text x="320" y="82" fill="#8b93a0" text-anchor="middle" font-size="10">read, transform, act</text>
+
+              <line x1="395" y1="70" x2="470" y2="70" stroke="#4fb3a9" stroke-width="2" marker-end="url(#arrow)"/>
+
+              <rect x="470" y="45" width="150" height="50" rx="3" fill="#212a36" stroke="#6fcf97"/>
+              <text x="545" y="65" fill="#6fcf97" text-anchor="middle">OUTCOME</text>
+              <text x="545" y="82" fill="#8b93a0" text-anchor="middle" font-size="10">file moved / sent / logged</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="analogy-box">
+          <div class="icon">🏭</div>
+          <div><strong>Analogy — the vending machine, not the chef.</strong> A chef (a normal script) needs you present to decide each step. A vending machine (an automation) is stocked once, then reacts the same correct way every time someone presses a button — including at 3am when nobody's there to fix a mistake. Automation scripts are designed for the 3am case.</div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Two example scripts, same task, different mindsets</h3>
+        <div class="code-label">Not automation-minded — assumes a human is watching</div>
+        <div class="code-block">files = os.listdir(<span class="str">"downloads"</span>)
+<span class="kw">for</span> f <span class="kw">in</span> files:
+    print(f)  <span class="com"># human reads this and moves files by hand</span></div>
+
+        <div class="code-label">Automation-minded — the script does the moving itself, and won't crash the whole batch on one bad file</div>
+        <div class="code-block"><span class="kw">import</span> shutil, os
+
+<span class="kw">for</span> name <span class="kw">in</span> os.listdir(<span class="str">"downloads"</span>):
+    ext = name.split(<span class="str">"."</span>)[-1].lower()
+    dest = <span class="fn">os.path.join</span>(<span class="str">"downloads"</span>, ext)
+    <span class="kw">try</span>:
+        os.makedirs(dest, exist_ok=<span class="bi">True</span>)
+        shutil.move(<span class="fn">os.path.join</span>(<span class="str">"downloads"</span>, name), dest)
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        print(<span class="str">f"Skipped {name}: {e}"</span>)  <span class="com"># keeps going instead of dying</span></div>
+      </div>
+
+      <h3>Comparing scripting styles</h3>
+      <table class="compare-table">
+        <tr><th>Trait</th><th>Interactive / learning script</th><th>Automation script</th></tr>
+        <tr><td>Audience</td><td>You, watching output live</td><td>No one — runs unattended</td></tr>
+        <tr><td>Failure behavior</td><td>Crash is fine, you'll see it</td><td>Must handle or log errors and keep going where possible</td></tr>
+        <tr><td>Inputs</td><td>Often hardcoded</td><td>Read from files, args, or config so it's reusable</td></tr>
+        <tr><td>Output</td><td><code>print()</code> to console</td><td>Files written, logs kept, notifications sent</td></tr>
+      </table>
+
+      <div class="section-block exercise">
+        <div class="ex-tag">EXERCISE 1.1 — Spot the automation mindset</div>
+        <p style="color:var(--text); margin:0;">You have a script that reads a folder of invoices and prints their totals. Rewrite the plan in your own words: what would you change to make it a real automation (trigger, error handling, output)? Jot 2–3 sentences.</p>
+        <textarea placeholder="e.g. Trigger it on a schedule, wrap the read in try/except so one bad invoice doesn't stop the rest, and write totals to a summary file instead of printing..."></textarea>
+        <div class="ex-btn-row">
+          <button class="btn-secondary" onclick="checkExercise(this, ['trigger','try','except','error','log','file','schedule'])">Check my thinking</button>
+        </div>
+        <div class="ex-feedback"></div>
+      </div>
+
+      <div class="section-block">
+        <h3>Common misconceptions</h3>
+        <div class="misconceptions">
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>"Automation" means using a special automation library.</span></div>
+            <div class="misc-body"><div class="misc-body-inner">No special framework is required — <code>os</code>, <code>shutil</code>, and the standard library are enough for most everyday automation. It's a design mindset (unattended, resilient) more than a toolset.</div></div>
+          </div>
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>If it works once when I run it, it's done.</span></div>
+            <div class="misc-body"><div class="misc-body-inner">Working once on your machine, with your files, tells you nothing about next Tuesday when a folder is empty or a filename has a space in it. Automation scripts are judged by how they behave on inputs you didn't test.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="takeaways">
+        <h4>Key takeaways</h4>
+        <ul>
+          <li>Automation = trigger + job + outcome, designed to run without you watching.</li>
+          <li>The defining trait isn't cleverness — it's resilience to unattended failure.</li>
+          <li>Standard-library modules (<code>os</code>, <code>shutil</code>, <code>sys</code>) already cover most automation building blocks.</li>
+        </ul>
+      </div>
+
+      <div class="quiz-wrap" id="quiz-m1"></div>
+    </section>
+
+    <!-- ===================== MODULE 2 ===================== -->
+    <section class="view" id="view-m2">
+      <div class="module-meta">MODULE 2 / 4 · FILES &amp; DATA</div>
+      <h2 class="module-title">Files, folders, and structured data</h2>
+      <p class="lead">Most automation is really data movement: reading something in one shape, and writing it back out in another. This module covers the file-system toolkit and the two data formats you'll meet constantly — CSV and JSON.</p>
+
+      <div class="section-block">
+        <h3><code>pathlib</code> vs <code>os.path</code></h3>
+        <p>Modern Python favors <code>pathlib.Path</code> for file paths — it treats a path as an object with methods, rather than a string you glue together. Both work; <code>pathlib</code> reads more clearly in new scripts.</p>
+        <div class="code-block"><span class="kw">from</span> pathlib <span class="kw">import</span> Path
+
+folder = Path(<span class="str">"reports"</span>)
+<span class="kw">for</span> file <span class="kw">in</span> folder.glob(<span class="str">"*.csv"</span>):
+    print(file.name, file.stat().st_size)
+
+<span class="com"># same idea with os.path (older style)</span>
+<span class="kw">import</span> os
+<span class="kw">for</span> name <span class="kw">in</span> os.listdir(<span class="str">"reports"</span>):
+    <span class="kw">if</span> name.endswith(<span class="str">".csv"</span>):
+        print(name)</div>
+
+        <div class="analogy-box">
+          <div class="icon">🗂️</div>
+          <div><strong>Analogy — a filing cabinet vs. loose string labels.</strong> <code>os.path</code> is like labeling folders with pieces of string you tie together (<code>"reports" + "/" + name</code>) — it works but is fragile. <code>pathlib</code> gives every folder a proper handle with built-in actions (<code>.glob()</code>, <code>.exists()</code>, <code>.stat()</code>) — a filing cabinet where every drawer already knows how to open itself.</div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Reading and writing CSV</h3>
+        <p>CSV is the lingua franca of spreadsheets. Python's built-in <code>csv</code> module reads rows as lists or, more usefully, as dictionaries keyed by header.</p>
+        <div class="code-block"><span class="kw">import</span> csv
+
+<span class="kw">with</span> open(<span class="str">"sales.csv"</span>, newline=<span class="str">""</span>) <span class="kw">as</span> f:
+    reader = csv.DictReader(f)
+    total = <span class="num">0</span>
+    <span class="kw">for</span> row <span class="kw">in</span> reader:
+        total += float(row[<span class="str">"amount"</span>])
+print(<span class="str">f"Total: {total:.2f}"</span>)</div>
+      </div>
+
+      <div class="section-block">
+        <h3>Reading and writing JSON</h3>
+        <p>JSON maps directly onto Python dicts and lists, which is why it's the default format for config files and API responses.</p>
+        <div class="code-block"><span class="kw">import</span> json
+
+<span class="kw">with</span> open(<span class="str">"config.json"</span>) <span class="kw">as</span> f:
+    config = json.load(f)
+
+config[<span class="str">"last_run"</span>] = <span class="str">"2026-09-04"</span>
+
+<span class="kw">with</span> open(<span class="str">"config.json"</span>, <span class="str">"w"</span>) <span class="kw">as</span> f:
+    json.dump(config, f, indent=<span class="num">2</span>)</div>
+      </div>
+
+      <h3>CSV vs JSON — when to use which</h3>
+      <table class="compare-table">
+        <tr><th>Trait</th><th>CSV</th><th>JSON</th></tr>
+        <tr><td>Shape</td><td>Flat rows/columns</td><td>Nested objects and lists</td></tr>
+        <tr><td>Best for</td><td>Spreadsheet-style data, bulk records</td><td>Config, API data, nested structures</td></tr>
+        <tr><td>Human editing</td><td>Easy in Excel/Sheets</td><td>Easy in a text editor</td></tr>
+        <tr><td>Python tool</td><td><code>csv.DictReader/Writer</code></td><td><code>json.load/dump</code></td></tr>
+      </table>
+
+      <div class="section-block exercise">
+        <div class="ex-tag">EXERCISE 2.1 — Build the pipeline order</div>
+        <p style="color:var(--text); margin:0 0 6px;">Drag the steps into the correct order for "read a CSV of orders, and write a JSON summary file."</p>
+        <div class="pipeline-ex" id="pipelineSlots">
+          <div class="pipeline-slot" data-slot="0">1</div>
+          <div class="pipeline-slot" data-slot="1">2</div>
+          <div class="pipeline-slot" data-slot="2">3</div>
+          <div class="pipeline-slot" data-slot="3">4</div>
+        </div>
+        <div class="pipeline-pool" id="pipelinePool">
+          <div class="pipeline-chip" draggable="true" data-answer="2">json.dump(summary, out_file)</div>
+          <div class="pipeline-chip" draggable="true" data-answer="0">open("orders.csv") and csv.DictReader</div>
+          <div class="pipeline-chip" draggable="true" data-answer="3">close / verify the output file exists</div>
+          <div class="pipeline-chip" draggable="true" data-answer="1">loop over rows, build a summary dict</div>
+        </div>
+        <div class="ex-btn-row">
+          <button class="btn-secondary" onclick="checkPipeline(this)">Check order</button>
+          <button class="btn-secondary" onclick="resetPipeline(this)">Reset</button>
+        </div>
+        <div class="ex-feedback"></div>
+      </div>
+
+      <div class="section-block">
+        <h3>Common misconceptions</h3>
+        <div class="misconceptions">
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>You must load an entire CSV into memory to process it.</span></div>
+            <div class="misc-body"><div class="misc-body-inner"><code>csv.DictReader</code> streams row by row, so even multi-gigabyte files can be processed with modest memory — you rarely need to load everything at once.</div></div>
+          </div>
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>Forgetting to close a file causes it to lose data immediately.</span></div>
+            <div class="misc-body"><div class="misc-body-inner">The real risk is that writes may sit buffered and never reach disk if the program crashes before closing. Using <code>with open(...) as f:</code> closes the file automatically, even on error — always prefer it over manual <code>open()</code>/<code>close()</code>.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="takeaways">
+        <h4>Key takeaways</h4>
+        <ul>
+          <li><code>pathlib.Path</code> is the modern way to work with files and folders.</li>
+          <li><code>csv.DictReader</code>/<code>DictWriter</code> read/write rows as dictionaries keyed by header.</li>
+          <li><code>json.load</code>/<code>dump</code> convert directly between JSON and Python dicts/lists.</li>
+          <li>Always use <code>with open(...) as f:</code> so files close automatically.</li>
+        </ul>
+      </div>
+
+      <div class="quiz-wrap" id="quiz-m2"></div>
+    </section>
+
+    <!-- ===================== MODULE 3 ===================== -->
+    <section class="view" id="view-m3">
+      <div class="module-meta">MODULE 3 / 4 · REAL-WORLD AUTOMATION</div>
+      <h2 class="module-title">Talking to the outside world</h2>
+      <p class="lead">Real automations rarely stay confined to your hard drive — they fetch web pages, call APIs, send notifications, and run on a schedule. This module covers the three most common "reach outside the script" tasks.</p>
+
+      <div class="section-block">
+        <h3>Calling a web API with <code>requests</code></h3>
+        <p><code>requests</code> is the standard third-party library (install with <code>pip install requests</code>) for making HTTP calls — the same mechanism your browser uses, but scriptable.</p>
+        <div class="code-block"><span class="kw">import</span> requests
+
+resp = requests.get(<span class="str">"https://api.example.com/status"</span>, timeout=<span class="num">10</span>)
+resp.raise_for_status()  <span class="com"># raises an error on 4xx/5xx instead of silently continuing</span>
+data = resp.json()
+print(data[<span class="str">"status"</span>])</div>
+        <div class="callout warn"><strong>Always set a timeout.</strong> Without <code>timeout=</code>, a hung server can freeze your script forever — a common reason "working" automations silently stop running.</div>
+      </div>
+
+      <div class="section-block">
+        <h3>Sending notifications</h3>
+        <p>The standard library's <code>smtplib</code> can send email directly; many teams instead post to a webhook (Slack, Discord, Teams) with a simple <code>requests.post()</code> call, which is often simpler than managing email credentials.</p>
+        <div class="code-block"><span class="kw">import</span> requests
+
+requests.post(
+    webhook_url,
+    json={<span class="str">"text"</span>: <span class="str">f"Automation finished: {rows_processed} rows processed."</span>}
+)</div>
+      </div>
+
+      <div class="section-block">
+        <h3>Scheduling: inside Python vs. the OS</h3>
+        <p>You can schedule work in two places. A library like <code>schedule</code> keeps a script running continuously and fires jobs at set times — good for long-lived services. For most automation, though, it's simpler and more robust to let the operating system start a short-lived script at the right time: <strong>cron</strong> on Linux/macOS, <strong>Task Scheduler</strong> on Windows.</p>
+        <div class="code-block"><span class="com"># cron: run every day at 6:30am</span>
+30 6 * * * /usr/bin/python3 /home/user/cleanup.py >> /home/user/cleanup.log 2>&1</div>
+      </div>
+
+      <h3>In-script scheduler vs. OS scheduler</h3>
+      <table class="compare-table">
+        <tr><th>Trait</th><th><code>schedule</code> library</th><th>cron / Task Scheduler</th></tr>
+        <tr><td>Process lifetime</td><td>Must stay running continuously</td><td>Starts fresh each run, then exits</td></tr>
+        <tr><td>Survives reboot</td><td>No, unless you also manage that</td><td>Yes — the OS restarts it for you</td></tr>
+        <tr><td>Good for</td><td>Long-lived services, dev/testing</td><td>Periodic scripts — the common case</td></tr>
+      </table>
+
+      <div class="analogy-box">
+        <div class="icon">⏰</div>
+        <div><strong>Analogy — an alarm clock you carry vs. one bolted to the wall.</strong> A <code>schedule</code>-based script is an alarm clock you have to keep charged and awake yourself. Cron is bolted to the wall (the OS) — it rings on time whether or not your own process is even alive.</div>
+      </div>
+
+      <div class="section-block exercise">
+        <div class="ex-tag">EXERCISE 3.1 — Design a notifier</div>
+        <p style="color:var(--text); margin:0;">Sketch (in words or pseudocode) a script that checks a website's status code every hour via cron, and posts to a webhook only if the site is down. What does the trigger, job, and outcome look like here?</p>
+        <textarea placeholder="Trigger: cron every hour. Job: requests.get() the URL with a timeout, check status_code. Outcome: post to webhook only if status != 200..."></textarea>
+        <div class="ex-btn-row">
+          <button class="btn-secondary" onclick="checkExercise(this, ['cron','status','webhook','requests','timeout','get'])">Check my thinking</button>
+        </div>
+        <div class="ex-feedback"></div>
+      </div>
+
+      <div class="section-block">
+        <h3>Common misconceptions</h3>
+        <div class="misconceptions">
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>Python has web-request support built in, so you never need to install anything.</span></div>
+            <div class="misc-body"><div class="misc-body-inner">The standard library has the lower-level <code>urllib</code>, but <code>requests</code> (a third-party package) is the de facto standard because it's far more ergonomic. It's an install, not a built-in — worth the <code>pip install</code>.</div></div>
+          </div>
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>Cron and a Python <code>schedule</code> loop are interchangeable — pick whichever.</span></div>
+            <div class="misc-body"><div class="misc-body-inner">They behave very differently on reboot and crash. A <code>schedule</code> loop dies with its process and stays dead until someone restarts it; cron re-invokes the script fresh from the OS, which is far more resilient for unattended automation.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="takeaways">
+        <h4>Key takeaways</h4>
+        <ul>
+          <li><code>requests</code> is the standard tool for HTTP calls — always set a <code>timeout</code>.</li>
+          <li>Webhooks are often simpler than email for automation notifications.</li>
+          <li>Prefer OS-level scheduling (cron / Task Scheduler) over an always-running Python loop for periodic jobs.</li>
+        </ul>
+      </div>
+
+      <div class="quiz-wrap" id="quiz-m3"></div>
+    </section>
+
+    <!-- ===================== MODULE 4 ===================== -->
+    <section class="view" id="view-m4">
+      <div class="module-meta">MODULE 4 / 4 · MASTERY &amp; RESILIENCE</div>
+      <h2 class="module-title">Making scripts survive the real world</h2>
+      <p class="lead">The final skill separating a fragile script from production automation: handling errors, logging what happened, and designing so re-running the script never causes damage.</p>
+
+      <div class="section-block">
+        <h3>Structured error handling</h3>
+        <p>Catch specific exceptions, not everything blindly. A bare <code>except:</code> hides bugs; a targeted <code>except FileNotFoundError:</code> lets you respond appropriately and still surfaces truly unexpected errors.</p>
+        <div class="code-block"><span class="kw">try</span>:
+    <span class="kw">with</span> open(<span class="str">"input.csv"</span>) <span class="kw">as</span> f:
+        process(f)
+<span class="kw">except</span> FileNotFoundError:
+    logging.error(<span class="str">"input.csv missing — skipping this run"</span>)
+<span class="kw">except</span> PermissionError:
+    logging.error(<span class="str">"No permission to read input.csv"</span>)
+<span class="kw">except</span> Exception <span class="kw">as</span> e:
+    logging.exception(<span class="str">f"Unexpected error: {e}"</span>)
+    <span class="kw">raise</span>  <span class="com"># re-raise unknowns rather than silently swallowing them</span></div>
+      </div>
+
+      <div class="section-block">
+        <h3>Logging instead of <code>print()</code></h3>
+        <p>The <code>logging</code> module gives you timestamps, severity levels, and the ability to write to a file — essential once a script runs unattended, since nobody is watching a console at 3am.</p>
+        <div class="code-block"><span class="kw">import</span> logging
+
+logging.basicConfig(
+    filename=<span class="str">"automation.log"</span>,
+    level=logging.INFO,
+    format=<span class="str">"%(asctime)s %(levelname)s %(message)s"</span>
+)
+logging.info(<span class="str">"Run started"</span>)
+logging.warning(<span class="str">"3 rows skipped due to bad data"</span>)</div>
+      </div>
+
+      <div class="section-block">
+        <h3>Idempotency: safe to re-run</h3>
+        <p>An idempotent script produces the same end state no matter how many times it runs — critical because cron jobs sometimes run twice, or you re-run manually after a crash. If your script appends a line to a file every run without checking, running it twice duplicates data.</p>
+        <div class="diagram-wrap">
+          <svg viewBox="0 0 600 130" width="100%" style="max-width:520px; display:block; margin:0 auto;">
+            <g font-family="ui-monospace, monospace" font-size="12">
+              <text x="10" y="20" fill="#8b93a0">Not idempotent:</text>
+              <rect x="10" y="30" width="90" height="30" fill="#212a36" stroke="#eb5757"/><text x="55" y="50" fill="#eb5757" text-anchor="middle">run 1</text>
+              <rect x="110" y="30" width="90" height="30" fill="#212a36" stroke="#eb5757"/><text x="155" y="50" fill="#eb5757" text-anchor="middle">run 2</text>
+              <text x="215" y="50" fill="#8b93a0">→ duplicate rows</text>
+
+              <text x="10" y="90" fill="#8b93a0">Idempotent:</text>
+              <rect x="10" y="100" width="90" height="30" fill="#212a36" stroke="#6fcf97"/><text x="55" y="120" fill="#6fcf97" text-anchor="middle">run 1</text>
+              <rect x="110" y="100" width="90" height="30" fill="#212a36" stroke="#6fcf97"/><text x="155" y="120" fill="#6fcf97" text-anchor="middle">run 2</text>
+              <text x="215" y="120" fill="#8b93a0">→ same end state</text>
+            </g>
+          </svg>
+        </div>
+        <div class="analogy-box">
+          <div class="icon">💡</div>
+          <div><strong>Analogy — a light switch, not a light-adding machine.</strong> Flipping a light switch "on" twice leaves the room exactly as bright as flipping it once — that's idempotent. A machine that adds one more lightbulb every time you press the button is not; press it by accident and you get a room full of bulbs. Design automation like the switch.</div>
+        </div>
+      </div>
+
+      <div class="section-block">
+        <h3>Retries with backoff</h3>
+        <p>Transient failures (a flaky network, a server under load) often succeed on a second attempt. Retrying immediately can make things worse; waiting longer between each attempt ("backoff") gives the problem time to clear.</p>
+        <div class="code-block"><span class="kw">import</span> time
+
+<span class="kw">for</span> attempt <span class="kw">in</span> range(<span class="num">3</span>):
+    <span class="kw">try</span>:
+        resp = requests.get(url, timeout=<span class="num">10</span>)
+        resp.raise_for_status()
+        <span class="kw">break</span>
+    <span class="kw">except</span> requests.RequestException:
+        wait = <span class="num">2</span> ** attempt  <span class="com"># 1s, 2s, 4s</span>
+        logging.warning(<span class="str">f"Attempt {attempt+1} failed, retrying in {wait}s"</span>)
+        time.sleep(wait)</div>
+      </div>
+
+      <div class="section-block exercise">
+        <div class="ex-tag">EXERCISE 4.1 — Make it idempotent</div>
+        <p style="color:var(--text); margin:0;">A script appends today's report line to <code>report.csv</code> every time it runs. Describe one change that makes re-running it safe (e.g. after a crash and manual re-run) without losing data.</p>
+        <textarea placeholder="e.g. Before appending, check whether today's date already has a row in report.csv; skip or overwrite that row instead of blindly appending..."></textarea>
+        <div class="ex-btn-row">
+          <button class="btn-secondary" onclick="checkExercise(this, ['check','exist','date','duplicate','overwrite','skip'])">Check my thinking</button>
+        </div>
+        <div class="ex-feedback"></div>
+      </div>
+
+      <div class="section-block">
+        <h3>Common misconceptions</h3>
+        <div class="misconceptions">
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>Catching every exception with a bare <code>except:</code> makes a script "safe."</span></div>
+            <div class="misc-body"><div class="misc-body-inner">It makes failures invisible instead of safe — the script keeps running in a broken state and you find out much later, if ever. Catch specific, expected exceptions and let unexpected ones surface (log and re-raise).</div></div>
+          </div>
+          <div class="misc-item">
+            <div class="misc-head" onclick="toggleMisc(this)"><span><span class="x">✕</span>Retrying immediately in a tight loop is just as good as backoff.</span></div>
+            <div class="misc-body"><div class="misc-body-inner">Hammering a struggling server with instant retries can make the underlying problem worse (and can get your script rate-limited or blocked). Exponential backoff gives the system time to recover.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="takeaways">
+        <h4>Key takeaways</h4>
+        <ul>
+          <li>Catch specific exceptions; let truly unexpected ones surface via logging + re-raise.</li>
+          <li>Use <code>logging</code>, not <code>print()</code>, for anything that runs unattended.</li>
+          <li>Design scripts to be idempotent — safe to re-run without duplicating work.</li>
+          <li>Use retries with exponential backoff for transient network failures.</li>
+        </ul>
+      </div>
+
+      <div class="quiz-wrap" id="quiz-m4"></div>
+    </section>
+
+    <!-- ===================== FINAL ===================== -->
+    <section class="view" id="view-final">
+      <div class="complete-banner" id="completeBanner">
+        <div class="trophy">🏆</div>
+        <h2 style="margin:0 0 6px;">Automation Master</h2>
+        <p style="margin:0;">You've completed all four modules of Python for Automation &amp; Scripting.</p>
+      </div>
+
+      <div class="eyebrow">FINAL CHALLENGE</div>
+      <h1>Build a resilient file watcher</h1>
+      <p class="lead">Combine everything: file handling, structured data, external calls, and resilience.</p>
+
+      <div class="final-challenge">
+        <div class="ftag">CHALLENGE BRIEF</div>
+        <p style="color:var(--text); margin:0 0 12px;">Write a script (pseudocode or real Python) that:</p>
+        <ol style="color:var(--text-dim); font-size:14.5px; padding-left:20px;">
+          <li>Scans an <code>incoming/</code> folder for <code>.csv</code> files using <code>pathlib</code>.</li>
+          <li>For each file, reads rows with <code>csv.DictReader</code> and computes a total.</li>
+          <li>Writes a JSON summary per file into a <code>processed/</code> folder — but skips files already summarized (idempotency).</li>
+          <li>Wraps the per-file work in <code>try/except</code>, logging failures instead of crashing the whole batch.</li>
+          <li>Posts a webhook message with the total number of files processed, retrying once on network failure.</li>
+        </ol>
+        <textarea style="min-height:160px;" placeholder="Write your script or detailed pseudocode here..."></textarea>
+        <div class="ex-btn-row">
+          <button class="btn-secondary" onclick="checkExercise(this, ['pathlib','csv','json','try','except','webhook','retry','idempotent','log'])">Self-check my approach</button>
+        </div>
+        <div class="ex-feedback"></div>
+      </div>
+
+      <h3>Cheat sheet</h3>
+      <div class="cheat-sheet">
+        <table>
+          <tr><th>Task</th><th>Snippet</th></tr>
+          <tr><td>List files</td><td><code>Path("dir").glob("*.csv")</code></td></tr>
+          <tr><td>Move a file</td><td><code>shutil.move(src, dst)</code></td></tr>
+          <tr><td>Read CSV as dicts</td><td><code>csv.DictReader(f)</code></td></tr>
+          <tr><td>Read/write JSON</td><td><code>json.load(f)</code> / <code>json.dump(obj, f)</code></td></tr>
+          <tr><td>HTTP GET with timeout</td><td><code>requests.get(url, timeout=10)</code></td></tr>
+          <tr><td>Log instead of print</td><td><code>logging.info("message")</code></td></tr>
+          <tr><td>Catch specific errors</td><td><code>except FileNotFoundError:</code></td></tr>
+          <tr><td>Retry with backoff</td><td><code>time.sleep(2 ** attempt)</code></td></tr>
+          <tr><td>Schedule (Linux)</td><td><code>crontab -e</code> → <code>30 6 * * * script.py</code></td></tr>
+        </table>
+      </div>
+
+      <h3>Summary notes</h3>
+      <p>Automation is a design mindset before it's a set of libraries: build around trigger → job → outcome, use <code>pathlib</code>/<code>csv</code>/<code>json</code> for data movement, reach for <code>requests</code> and OS-level scheduling for the outside world, and make everything resilient with targeted exception handling, logging, idempotency, and backoff retries.</p>
+      <button class="btn-secondary print-btn" onclick="window.print()">Print / save these notes</button>
+
+      <h3 style="margin-top:36px;">Continue learning</h3>
+      <div class="resource-grid">
+        <div class="resource-card">
+          <h4>BOOKS</h4>
+          <ul>
+            <li>"Automate the Boring Stuff with Python" — Al Sweigart</li>
+            <li>"Python Crash Course" (automation projects section) — Eric Matthes</li>
+          </ul>
+        </div>
+        <div class="resource-card">
+          <h4>DOCUMENTATION</h4>
+          <ul>
+            <li><a href="https://docs.python.org/3/library/pathlib.html" target="_blank" rel="noopener">docs.python.org — pathlib</a></li>
+            <li><a href="https://docs.python.org/3/library/csv.html" target="_blank" rel="noopener">docs.python.org — csv</a></li>
+            <li><a href="https://requests.readthedocs.io" target="_blank" rel="noopener">requests.readthedocs.io</a></li>
+          </ul>
+        </div>
+        <div class="resource-card">
+          <h4>COMMUNITIES</h4>
+          <ul>
+            <li>r/learnpython, r/Python</li>
+            <li>Python Discord — #help-python channel</li>
+            <li>Stack Overflow — python + automation tags</li>
+          </ul>
+        </div>
+        <div class="resource-card">
+          <h4>PRACTICE PLATFORMS</h4>
+          <ul>
+            <li>Automate the Boring Stuff — online practice projects</li>
+            <li>Exercism.org — Python track</li>
+            <li>Advent of Code — scripting-style puzzles</li>
+          </ul>
+        </div>
+        <div class="resource-card">
+          <h4>SEARCH KEYWORDS</h4>
+          <div class="keyword-chips">
+            <span class="kw-chip">python file automation</span>
+            <span class="kw-chip">python cron job</span>
+            <span class="kw-chip">python requests retry backoff</span>
+            <span class="kw-chip">python logging best practices</span>
+            <span class="kw-chip">idempotent script design</span>
+          </div>
+        </div>
+        <div class="resource-card">
+          <h4>AI PROMPTS FOR FURTHER LEARNING</h4>
+          <ul>
+            <li>"Review this automation script for idempotency issues."</li>
+            <li>"Turn this manual weekly task into a Python + cron automation plan."</li>
+            <li>"Explain exponential backoff vs. fixed retry delay with a diagram."</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+/* ============ State ============ */
+const state = {
+  m1:false, m2:false, m3:false, m4:false,
+  order: ['intro','m1','m2','m3','m4','final']
+};
+
+/* ============ Navigation ============ */
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navEl = document.querySelector('.nav-item[data-view="'+id+'"]');
+  if(navEl) navEl.classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    if(item.classList.contains('locked')) return;
+    showView(item.dataset.view);
+  });
+});
+
+document.getElementById('startBtn').addEventListener('click', ()=> showView('m1'));
+
+/* ============ Theme toggle ============ */
+document.getElementById('themeBtn').addEventListener('click', function(){
+  document.body.classList.toggle('light');
+  this.textContent = document.body.classList.contains('light') ? 'Dark mode' : 'Light mode';
+});
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+/* ============ Misconceptions accordion ============ */
+function toggleMisc(headEl){
+  headEl.parentElement.classList.toggle('open');
+}
+
+/* ============ Free-text exercise self-check ============ */
+function checkExercise(btn, keywords){
+  const wrap = btn.closest('.exercise') || btn.closest('.final-challenge');
+  const ta = wrap.querySelector('textarea');
+  const fb = wrap.querySelector('.ex-feedback');
+  const text = ta.value.toLowerCase();
+  const hits = keywords.filter(k=>text.includes(k));
+  fb.classList.remove('ok','hint');
+  if(text.trim().length < 15){
+    fb.textContent = "Add a bit more detail — try describing the trigger, the risk, and how your change addresses it.";
+    fb.classList.add('hint');
+  } else if(hits.length >= 2){
+    fb.textContent = "Solid reasoning — you covered the core idea (" + hits.slice(0,3).join(', ') + "). That's the kind of thinking real automation scripts need.";
+    fb.classList.add('ok');
+  } else {
+    fb.textContent = "You're on the right track, but consider terms like: " + keywords.slice(0,4).join(', ') + ". Re-read the section above and try refining your answer.";
+    fb.classList.add('hint');
+  }
+  fb.classList.add('show');
+}
+
+/* ============ Drag-drop pipeline exercise ============ */
+(function(){
+  const pool = document.getElementById('pipelinePool');
+  const slots = document.querySelectorAll('#pipelineSlots .pipeline-slot');
+  let dragged = null;
+
+  pool.querySelectorAll('.pipeline-chip').forEach(chip=>{
+    chip.addEventListener('dragstart', e=>{ dragged = chip; });
+  });
+  slots.forEach(slot=>{
+    slot.addEventListener('dragover', e=> e.preventDefault());
+    slot.addEventListener('drop', e=>{
+      e.preventDefault();
+      if(!dragged || slot.classList.contains('filled')) return;
+      slot.textContent = dragged.textContent;
+      slot.dataset.answer = dragged.dataset.answer;
+      slot.classList.add('filled');
+      dragged.classList.add('placed');
+      dragged.setAttribute('draggable','false');
+    });
+  });
+})();
+
+function checkPipeline(btn){
+  const wrap = btn.closest('.exercise');
+  const fb = wrap.querySelector('.ex-feedback');
+  const slots = wrap.querySelectorAll('.pipeline-slot');
+  let correct = true;
+  slots.forEach((s, idx)=>{ if(s.dataset.answer !== String(idx)) correct = false; });
+  fb.classList.remove('ok','hint');
+  if(correct){
+    fb.textContent = "Correct order! Read → transform/summarize → write JSON → verify output.";
+    fb.classList.add('ok');
+  } else {
+    fb.textContent = "Not quite the right order yet — think about what has to happen before you can write a summary (you need the data first).";
+    fb.classList.add('hint');
+  }
+  fb.classList.add('show');
+}
+function resetPipeline(btn){
+  const wrap = btn.closest('.exercise');
+  wrap.querySelectorAll('.pipeline-slot').forEach((s,idx)=>{
+    s.textContent = idx+1; s.classList.remove('filled'); delete s.dataset.answer;
+  });
+  wrap.querySelectorAll('.pipeline-chip').forEach(c=>{
+    c.classList.remove('placed'); c.setAttribute('draggable','true');
+  });
+  wrap.querySelector('.ex-feedback').classList.remove('show');
+}
+
+/* ============ Quiz data ============ */
+const quizzes = {
+  m1: {
+    title:"Module 1 Quiz — Foundations",
+    badge:'m1', unlock:'m2',
+    questions:[
+      {q:"What are the three parts of the trigger → job → outcome model?", opts:["Input, output, error","Trigger, job, outcome","Function, class, module","Script, library, package"], correct:1, exp:"An automation starts from a trigger, performs a job, and leaves behind an outcome — that's the core design frame for this whole course."},
+      {q:"Why does an automation script need to handle errors differently than a script you run interactively?", opts:["It doesn't — errors are the same either way","Because no one is watching it run, so it must respond to failure on its own","Because automation scripts can't use try/except","Because errors only happen in automation scripts"], correct:1, exp:"Interactive scripts can crash and let you fix it live; unattended automation must anticipate and handle failure itself."},
+      {q:"Which best describes the vending machine analogy from this module?", opts:["Automation should sell things","A vending machine works correctly and unattended every time, like a well-designed automation","Vending machines are always broken, like scripts","It's about inventory management specifically"], correct:1, exp:"The vending machine (unlike a chef) performs correctly without a human present each time — the core idea behind automation design."},
+      {q:"A script that hardcodes a single filename and crashes on any unexpected input is best described as:", opts:["Production-ready automation","An automation-minded script","An interactive/learning-style script, not yet automation-ready","A resilient script"], correct:2, exp:"Hardcoded inputs and crash-on-anything behavior are hallmarks of interactive scripts, not the resilient design automation calls for."}
+    ]
+  },
+  m2: {
+    title:"Module 2 Quiz — Files & Data",
+    badge:'m2', unlock:'m3',
+    questions:[
+      {q:"What is the main advantage of pathlib.Path over building paths with plain strings?", opts:["It's faster at runtime","Paths become objects with built-in methods like .glob() and .exists()","It only works on Windows","It removes the need for the csv module"], correct:1, exp:"pathlib treats a path as an object with useful methods, avoiding fragile string concatenation."},
+      {q:"Which module/class reads CSV rows as dictionaries keyed by header?", opts:["json.load","csv.DictReader","os.listdir","pathlib.Path"], correct:1, exp:"csv.DictReader reads each row into a dict using the header row as keys."},
+      {q:"Why is 'with open(...) as f:' preferred over manual open()/close()?", opts:["It's shorter to type only","It closes the file automatically, even if an error occurs","It automatically converts CSV to JSON","It prevents all runtime errors"], correct:1, exp:"The with-block guarantees the file is closed even if an exception is raised inside it — safer than manual close()."},
+      {q:"When is JSON generally a better fit than CSV?", opts:["When data is strictly flat rows and columns","When data is nested (objects containing lists/objects)","JSON is always better than CSV","CSV can't be read by Python at all"], correct:1, exp:"JSON naturally represents nested structures; CSV is best for flat, tabular data."}
+    ]
+  },
+  m3: {
+    title:"Module 3 Quiz — Real-World Automation",
+    badge:'m3', unlock:'m4',
+    questions:[
+      {q:"Why should you always set a timeout on requests.get()?", opts:["It's required by Python syntax","Without it, a hung server can freeze the script indefinitely","It makes the response load faster","It's only needed for POST requests"], correct:1, exp:"A missing timeout means the script can hang forever waiting on an unresponsive server — a common cause of silently 'stuck' automations."},
+      {q:"What is a key advantage of cron over an always-running Python `schedule` loop?", opts:["Cron requires no configuration at all","Cron re-invokes the script fresh via the OS, surviving reboots/crashes better","schedule is faster","cron only works with Python 2"], correct:1, exp:"cron is managed by the OS and restarts the job independent of any long-lived process staying alive."},
+      {q:"According to this module, what's often simpler than email for automation notifications?", opts:["Physical printouts","Posting a JSON message to a webhook URL","SMS only","There is no simpler alternative"], correct:1, exp:"A webhook POST (e.g. to Slack/Discord) avoids managing email credentials and is often just one requests.post() call."},
+      {q:"requests is best described as:", opts:["Part of the Python standard library, no install needed","A third-party package installed via pip, the de facto standard for HTTP calls","A built-in replacement for csv","Only usable for downloading files, not APIs"], correct:1, exp:"requests must be installed (pip install requests); it's not in the standard library, but it's the ecosystem standard for HTTP work."}
+    ]
+  },
+  m4: {
+    title:"Module 4 Quiz — Mastery & Resilience",
+    badge:'m4', unlock:'final',
+    questions:[
+      {q:"Why is a bare `except:` generally discouraged in automation scripts?", opts:["It's slower than specific excepts","It silently hides unexpected errors instead of surfacing them","Python doesn't allow it","It only catches syntax errors"], correct:1, exp:"A bare except swallows everything, including bugs you didn't anticipate, letting the script run on in a broken state undetected."},
+      {q:"What does 'idempotent' mean in the context of automation scripts?", opts:["The script runs faster each time","Running it multiple times produces the same end state as running it once","The script never fails","The script uses no external libraries"], correct:1, exp:"Idempotency means re-running the script (e.g. after a crash) doesn't duplicate work or corrupt state."},
+      {q:"Why use the logging module instead of print() in unattended scripts?", opts:["print() doesn't work in Python 3","logging gives timestamps, severity levels, and can write to a file for later review","logging is required by cron","There's no real difference"], correct:1, exp:"Nobody watches console output from an unattended run — logging preserves a record with context you can review afterward."},
+      {q:"What problem does exponential backoff address during retries?", opts:["It slows down successful requests unnecessarily","It avoids hammering a struggling service with immediate repeated retries","It guarantees the request will always succeed","It replaces the need for try/except"], correct:1, exp:"Increasing the wait between retries (1s, 2s, 4s...) gives a transient problem time to resolve instead of piling on more load."}
+    ]
+  }
+};
+
+/* ============ Render quizzes ============ */
+function renderQuiz(key){
+  const data = quizzes[key];
+  const container = document.getElementById('quiz-'+key);
+  let html = '<div class="quiz-header"><h3 style="margin:0;">'+data.title+'</h3><span style="font-family:var(--mono); font-size:11px; color:var(--text-faint);">4 questions · 70% to pass</span></div>';
+  data.questions.forEach((qu, qi)=>{
+    html += '<div class="quiz-q" data-qi="'+qi+'">';
+    html += '<div class="qn">QUESTION '+(qi+1)+' OF 4</div>';
+    html += '<p class="qtext">'+qu.q+'</p>';
+    qu.opts.forEach((opt, oi)=>{
+      html += '<button class="opt" data-oi="'+oi+'" onclick="answerQuestion(\''+key+'\','+qi+','+oi+', this)">'+opt+'</button>';
+    });
+    html += '<div class="q-explain"></div>';
+    html += '</div>';
+  });
+  html += '<div class="quiz-submit"><button class="start-btn" style="padding:10px 22px; font-size:14px;" onclick="submitQuiz(\''+key+'\')">Submit answers</button></div>';
+  html += '<div class="quiz-result"><div class="score"></div><p class="score-msg"></p><button class="unlock-btn" style="display:none;">Unlock next module →</button><button class="btn-secondary retry-btn" onclick="retryQuiz(\''+key+'\')">Retry quiz</button></div>';
+  container.innerHTML = html;
+}
+['m1','m2','m3','m4'].forEach(renderQuiz);
+
+const quizAnswers = {m1:{}, m2:{}, m3:{}, m4:{}};
+
+function answerQuestion(key, qi, oi, btn){
+  const qBlock = btn.closest('.quiz-q');
+  if(qBlock.classList.contains('answered')) return;
+  quizAnswers[key][qi] = oi;
+  qBlock.classList.add('answered');
+  const correct = quizzes[key].questions[qi].correct;
+  qBlock.querySelectorAll('.opt').forEach((o,idx)=>{
+    o.classList.add('disabled');
+    if(idx === correct) o.classList.add('correct');
+    else if(idx === oi) o.classList.add('incorrect');
+  });
+  const exp = qBlock.querySelector('.q-explain');
+  exp.textContent = (oi===correct ? "Correct. " : "Not quite. ") + quizzes[key].questions[qi].exp;
+  exp.classList.add('show');
+}
+
+function submitQuiz(key){
+  const data = quizzes[key];
+  const total = data.questions.length;
+  let answered = Object.keys(quizAnswers[key]).length;
+  if(answered < total){
+    alert('Answer all '+total+' questions before submitting.');
+    return;
+  }
+  let correctCount = 0;
+  data.questions.forEach((qu,qi)=>{ if(quizAnswers[key][qi]===qu.correct) correctCount++; });
+  const pct = Math.round((correctCount/total)*100);
+  const container = document.getElementById('quiz-'+key);
+  const resultBox = container.querySelector('.quiz-result');
+  container.querySelector('.quiz-submit').style.display='none';
+  resultBox.querySelector('.score').textContent = pct+'%';
+  const msg = resultBox.querySelector('.score-msg');
+  const unlockBtn = resultBox.querySelector('.unlock-btn');
+  if(pct >= 70){
+    msg.textContent = 'Passed — '+correctCount+'/'+total+' correct. Module badge earned.';
+    unlockBtn.style.display='inline-block';
+    unlockBtn.onclick = ()=> unlockNext(key);
+    earnBadge(data.badge);
+    markDone(key);
+  } else {
+    msg.textContent = 'Score '+correctCount+'/'+total+' — 70% needed to unlock the next module. Review the section above and retry.';
+    unlockBtn.style.display='none';
+  }
+  resultBox.classList.add('show');
+  updateProgress();
+}
+
+function retryQuiz(key){
+  quizAnswers[key] = {};
+  renderQuiz(key);
+}
+
+function unlockNext(key){
+  const next = quizzes[key].unlock;
+  const navEl = document.querySelector('.nav-item[data-view="'+next+'"]');
+  if(navEl) navEl.classList.remove('locked');
+  showView(next);
+}
+
+function markDone(key){
+  const navEl = document.querySelector('.nav-item[data-view="'+key+'"]');
+  if(navEl){ navEl.classList.add('done'); navEl.querySelector('.dot').textContent='✓'; }
+}
+
+function earnBadge(name){
+  const b = document.querySelector('.badge[data-badge="'+name+'"]');
+  if(b) b.classList.add('earned');
+  if(name==='m4'){
+    setTimeout(()=>{
+      const finalBadge = document.querySelector('.badge[data-badge="final"]');
+      const navEl = document.querySelector('.nav-item[data-view="final"]');
+      if(navEl) navEl.classList.remove('locked');
+    }, 300);
+  }
+}
+
+function updateProgress(){
+  const doneCount = document.querySelectorAll('.nav-item.done').length;
+  const pct = Math.round((doneCount/4)*100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressPct').textContent = pct+'%';
+  if(doneCount===4){
+    document.querySelector('.badge[data-badge="final"]').classList.add('earned');
+    document.getElementById('completeBanner').classList.add('show');
+  }
+}
+</script>
+</body>
+</html>
