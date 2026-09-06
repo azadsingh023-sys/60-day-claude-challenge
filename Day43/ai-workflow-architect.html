@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Workflow Architect — Small Business Social Promotion</title>
+<style>
+  :root{
+    --paper:#E8DCC8;
+    --paper-card:#F6F1E4;
+    --ink:#2B2620;
+    --ink-soft:#5A5245;
+    --brick:#B23A2E;
+    --brick-dark:#8C2C22;
+    --stamp:#3F5C4E;
+    --gold:#B8912A;
+    --line: rgba(43,38,32,0.18);
+    --shadow: rgba(43,38,32,0.15);
+    --radius-tag: 6px;
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  [data-theme="dark"]{
+    --paper:#1B1712;
+    --paper-card:#252019;
+    --ink:#EDE3CE;
+    --ink-soft:#B8AB92;
+    --brick:#D9695C;
+    --brick-dark:#B23A2E;
+    --stamp:#79A38D;
+    --gold:#E0B84A;
+    --line: rgba(237,227,206,0.16);
+    --shadow: rgba(0,0,0,0.45);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.55;
+    transition:background .35s ease, color .35s ease;
+  }
+  ::selection{background:var(--brick); color:var(--paper-card);}
+  a{color:var(--brick-dark);}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:var(--paper);
+    border-bottom:1px solid var(--line);
+    padding:10px 0;
+  }
+  .topbar-inner{display:flex; align-items:center; justify-content:space-between; gap:16px;}
+  .brandmark{display:flex; align-items:center; gap:10px; font-family:var(--serif); font-size:17px; letter-spacing:.2px;}
+  .brandmark .dot{width:9px;height:9px;border-radius:50%;background:var(--brick);display:inline-block;}
+  .topbar-actions{display:flex; gap:10px; align-items:center;}
+  button.iconbtn{
+    background:transparent; border:1px solid var(--line); color:var(--ink);
+    padding:7px 12px; border-radius:var(--radius-tag); cursor:pointer;
+    font-family:var(--sans); font-size:13px;
+  }
+  button.iconbtn:hover{border-color:var(--brick); color:var(--brick-dark);}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:64px 0 40px; position:relative;}
+  .tagline{
+    display:inline-block; font-family:var(--sans); font-size:13px; color:var(--stamp);
+    border:1.5px dashed var(--stamp); padding:4px 10px; border-radius:20px; margin-bottom:22px;
+  }
+  h1.title{
+    font-family:var(--serif); font-weight:400; font-size:clamp(34px,5vw,56px);
+    margin:0 0 14px; line-height:1.08; max-width:720px;
+  }
+  .subtitle{font-size:17px; color:var(--ink-soft); max-width:560px; margin:0 0 28px;}
+  .hero-tag{
+    position:absolute; right:0; top:56px; width:150px; height:150px;
+    display:none;
+  }
+  @media(min-width:860px){.hero-tag{display:block;}}
+
+  .breadcrumb-strip{
+    display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;
+  }
+  .crumb{
+    font-family:var(--serif); font-style:italic; font-size:14px; color:var(--ink-soft);
+    padding:5px 12px; background:var(--paper-card); border:1px solid var(--line); border-radius:3px;
+  }
+  .crumb.active{color:var(--brick-dark); border-color:var(--brick); font-style:normal;}
+
+  /* ---------- Roadmap ---------- */
+  .roadmap-section{padding:8px 0 40px;}
+  .section-label{
+    font-family:var(--serif); font-size:22px; margin:0 0 6px;
+  }
+  .section-sub{color:var(--ink-soft); font-size:14px; margin:0 0 24px;}
+  .roadmap{
+    display:flex; overflow-x:auto; gap:0; padding-bottom:8px; scrollbar-width:thin;
+  }
+  .stage-stop{
+    flex:0 0 auto; width:150px; padding:14px 12px; cursor:pointer; position:relative;
+    border-top:3px solid var(--line);
+    transition:border-color .2s ease;
+  }
+  .stage-stop:hover{border-top-color:var(--stamp);}
+  .stage-stop.active{border-top-color:var(--brick);}
+  .stage-num{font-family:var(--serif); font-size:12px; color:var(--ink-soft);}
+  .stage-name{font-size:13.5px; font-weight:600; margin-top:4px;}
+  .stage-time{font-size:11.5px; color:var(--ink-soft); margin-top:4px;}
+  .stage-check{
+    position:absolute; top:12px; right:10px; width:16px; height:16px;
+    border:1.5px solid var(--line); border-radius:3px; font-size:11px;
+    display:flex; align-items:center; justify-content:center; color:var(--stamp);
+  }
+  .stage-check.done{background:var(--stamp); border-color:var(--stamp); color:var(--paper-card);}
+
+  /* ---------- Stage panel ---------- */
+  .panel{
+    background:var(--paper-card); border:1px solid var(--line); border-radius:8px;
+    padding:32px; margin-bottom:28px; box-shadow:0 2px 14px var(--shadow);
+  }
+  .panel-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:6px; flex-wrap:wrap;}
+  .panel-title{font-family:var(--serif); font-size:26px; margin:0;}
+  .panel-meta{font-size:13px; color:var(--ink-soft);}
+  .panel-desc{color:var(--ink-soft); margin:10px 0 22px; max-width:640px; font-size:14.5px;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px;}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr;}}
+
+  .block-title{
+    font-size:12.5px; text-transform:none; font-weight:700; color:var(--brick-dark);
+    margin:0 0 8px; display:flex; align-items:center; gap:6px;
+  }
+  ul.tasklist{list-style:none; margin:0 0 20px; padding:0;}
+  ul.tasklist li{
+    padding:8px 0 8px 26px; border-bottom:1px dashed var(--line); font-size:14px; position:relative;
+  }
+  ul.tasklist li:last-child{border-bottom:none;}
+  ul.tasklist li input[type=checkbox]{
+    position:absolute; left:0; top:10px; width:15px; height:15px; accent-color:var(--stamp); cursor:pointer;
+  }
+  ul.plain{margin:0 0 20px; padding-left:18px; font-size:14px;}
+  ul.plain li{margin-bottom:6px;}
+
+  .tool-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:14px 16px; margin-bottom:12px;
+  }
+  .tool-card .tool-row{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .tool-name{font-weight:700; font-size:14.5px;}
+  .badge{
+    font-size:10.5px; font-weight:700; color:var(--paper-card); background:var(--stamp);
+    padding:2px 8px; border-radius:10px;
+  }
+  .badge.gold{background:var(--gold);}
+  .tool-why{font-size:13px; color:var(--ink-soft); margin-top:6px;}
+  .tool-alt{font-size:12.5px; margin-top:6px; color:var(--ink-soft);}
+  .tool-alt b{color:var(--ink);}
+
+  .prompt-box{
+    background:var(--ink); color:var(--paper-card); border-radius:6px; padding:14px 16px;
+    font-family:'Courier New', monospace; font-size:12.8px; margin-bottom:10px; position:relative;
+    white-space:pre-wrap; line-height:1.5;
+  }
+  [data-theme="dark"] .prompt-box{background:#0F0D0A;}
+  .copybtn{
+    position:absolute; top:8px; right:8px; background:var(--brick); color:#fff; border:none;
+    padding:3px 9px; border-radius:4px; font-size:10.5px; cursor:pointer; font-family:var(--sans);
+  }
+
+  .note-line{display:flex; gap:10px; align-items:flex-start; margin-bottom:8px; font-size:14px;}
+  .note-line .mk{color:var(--brick-dark); font-weight:700;}
+  .mistake-line{display:flex; gap:10px; align-items:flex-start; margin-bottom:8px; font-size:14px;}
+  .mistake-line .mk{color:var(--brick-dark);}
+
+  .stat-row{display:flex; gap:18px; flex-wrap:wrap; margin:16px 0 4px;}
+  .stat{background:var(--paper); border:1px solid var(--line); border-radius:6px; padding:10px 14px; font-size:13px;}
+  .stat b{display:block; font-family:var(--serif); font-size:17px;}
+
+  .notes-area{
+    width:100%; min-height:70px; background:var(--paper); border:1px solid var(--line); border-radius:6px;
+    padding:10px 12px; font-family:var(--sans); font-size:13.5px; color:var(--ink); resize:vertical;
+  }
+  .bookmark-btn{
+    margin-top:10px; background:transparent; border:1px solid var(--gold); color:var(--gold);
+    padding:6px 12px; border-radius:4px; font-size:12.5px; cursor:pointer;
+  }
+  .bookmark-btn.saved{background:var(--gold); color:var(--paper-card);}
+
+  /* ---------- Decision tree ---------- */
+  .dtree{font-size:14px;}
+  .dnode{
+    border:1px solid var(--line); border-radius:6px; padding:12px 14px; margin-bottom:8px; background:var(--paper);
+    cursor:pointer;
+  }
+  .dnode .q{font-weight:700;}
+  .dnode .opts{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+  .dnode .opts button{
+    background:var(--paper-card); border:1px solid var(--line); border-radius:16px; padding:5px 12px;
+    font-size:12.5px; cursor:pointer; color:var(--ink);
+  }
+  .dnode .opts button:hover{border-color:var(--brick); color:var(--brick-dark);}
+  .dresult{
+    margin-top:10px; padding:12px 14px; background:var(--stamp); color:var(--paper-card); border-radius:6px; font-size:13.5px;
+    display:none;
+  }
+  .dresult.show{display:block;}
+
+  /* ---------- Comparison table ---------- */
+  table.cmp{width:100%; border-collapse:collapse; font-size:13.5px; margin-bottom:6px;}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:9px 10px; text-align:left;}
+  table.cmp th{background:var(--paper); font-family:var(--serif); font-weight:400;}
+  table.cmp tr:nth-child(even){background:var(--paper);}
+
+  /* ---------- Progress ---------- */
+  .progress-wrap{
+    position:sticky; bottom:0; background:var(--paper); border-top:1px solid var(--line);
+    padding:12px 0; z-index:40;
+  }
+  .progress-bar-track{height:8px; background:var(--paper-card); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .progress-bar-fill{height:100%; background:var(--brick); width:0%; transition:width .4s ease;}
+  .progress-label{font-size:12.5px; color:var(--ink-soft); margin-top:6px; display:flex; justify-content:space-between;}
+
+  /* ---------- Closing sections ---------- */
+  .closing-grid{display:grid; grid-template-columns:1fr 1fr; gap:20px;}
+  @media(max-width:720px){.closing-grid{grid-template-columns:1fr;}}
+  .chip{
+    display:inline-block; background:var(--paper); border:1px solid var(--line); border-radius:14px;
+    padding:5px 12px; font-size:12.5px; margin:0 6px 6px 0;
+  }
+  footer.foot{padding:40px 0 60px; color:var(--ink-soft); font-size:12.5px; text-align:center;}
+
+  @media print{
+    .topbar, .progress-wrap, .roadmap, button, .bookmark-btn{display:none !important;}
+    body{background:#fff; color:#000;}
+    .panel{box-shadow:none; border:1px solid #ccc; break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brandmark"><span class="dot"></span> AI Workflow Architect</div>
+    <div class="topbar-actions">
+      <button class="iconbtn" onclick="window.print()">Print guide</button>
+      <button class="iconbtn" id="themeBtn" onclick="toggleTheme()">Dark mode</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap hero">
+  <span class="tagline">Custom workflow, not a checklist</span>
+  <h1 class="title">Selling your product across Instagram, LinkedIn &amp; TikTok — without a marketing team.</h1>
+  <p class="subtitle">A complete, end-to-end AI-assisted workflow for a small business promoting a product on multiple social platforms — from strategy to a repeatable, semi-automated engine.</p>
+  <div class="breadcrumb-strip">
+    <span class="crumb">Marketing</span>
+    <span class="crumb">Social Media Marketing</span>
+    <span class="crumb">Multi-platform</span>
+    <span class="crumb active">Small Business Product Promotion</span>
+  </div>
+</div>
+
+<div class="wrap roadmap-section">
+  <h2 class="section-label">The workflow, stage by stage</h2>
+  <p class="section-sub">Click any stage to jump straight to it. Check tasks off as you go — your progress is saved on this device.</p>
+  <div class="roadmap" id="roadmap"></div>
+</div>
+
+<div class="wrap" id="stages"></div>
+
+<div class="wrap" style="padding-bottom:20px;">
+  <div class="panel">
+    <h2 class="panel-title" style="margin-bottom:14px;">Which tool should you actually start with?</h2>
+    <p class="panel-desc">A quick decision tree — answer honestly about your current setup.</p>
+    <div class="dtree" id="dtree"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="panel">
+    <h2 class="panel-title" style="margin-bottom:14px;">Workflow Summary</h2>
+    <p class="panel-desc" style="max-width:100%;">This workflow takes a small business from an unfocused posting habit to a repeatable, multi-platform promotion engine: a documented content strategy, a batch-production system for visuals/video/copy, a scheduling calendar spanning Instagram, LinkedIn and TikTok, active community engagement, and a monthly analytics loop that feeds back into what gets made next. Total build-out time for the first cycle is roughly <b>18–25 hours</b>, dropping to <b>4–6 hours/week</b> once the system is running.</p>
+
+    <div class="closing-grid">
+      <div>
+        <h3 class="block-title">Recommended AI Stack</h3>
+        <table class="cmp">
+          <tr><th>Job</th><th>Primary tool</th></tr>
+          <tr><td>Strategy &amp; research</td><td>Claude</td></tr>
+          <tr><td>Static visuals</td><td>Canva (Magic Studio)</td></tr>
+          <tr><td>Short-form video</td><td>CapCut</td></tr>
+          <tr><td>Copywriting</td><td>Claude</td></tr>
+          <tr><td>Scheduling</td><td>Buffer</td></tr>
+          <tr><td>Analytics synthesis</td><td>Claude + native platform insights</td></tr>
+        </table>
+      </div>
+      <div>
+        <h3 class="block-title">Learning Resources</h3>
+        <ul class="plain">
+          <li>Meta Blueprint (free Instagram/Facebook ads &amp; content courses)</li>
+          <li>HubSpot Academy — Social Media Marketing course</li>
+          <li>Canva Design School</li>
+          <li>Later's "Visual Marketing" blog</li>
+        </ul>
+        <h3 class="block-title">Communities</h3>
+        <p class="chip">r/smallbusiness</p><p class="chip">r/SocialMediaMarketing</p><p class="chip">Indie Hackers</p><p class="chip">Local chamber of commerce groups</p>
+      </div>
+    </div>
+
+    <h3 class="block-title" style="margin-top:16px;">Search Keywords to research further</h3>
+    <p><span class="chip">UGC-style ads small business</span><span class="chip">content batching workflow</span><span class="chip">social media content calendar template</span><span class="chip">short-form video hooks 2026</span><span class="chip">Instagram + TikTok cross-posting</span></p>
+
+    <h3 class="block-title" style="margin-top:16px;">Additional AI Prompts to explore</h3>
+    <div class="prompt-box">Audit my last 12 posts (paste captions) and tell me which 3 content pillars they actually cluster into, even if I didn't plan them that way.<button class="copybtn" onclick="copyPrompt(this)">Copy</button></div>
+    <div class="prompt-box">I have 45 minutes and one product photo. Give me 5 caption + hook variations for Instagram, LinkedIn and TikTok from this single asset.<button class="copybtn" onclick="copyPrompt(this)">Copy</button></div>
+
+    <h3 class="block-title" style="margin-top:16px;">Future Automation Opportunities</h3>
+    <ul class="plain">
+      <li>Auto-route new product photos into a Canva template via Zapier/Make once a naming convention is standardized.</li>
+      <li>Weekly automated pull of platform analytics into a single spreadsheet for trend-spotting without manual exports.</li>
+      <li>Auto-draft reply suggestions for common DM questions (pricing, shipping, sizing) for human approval before sending.</li>
+    </ul>
+  </div>
+</div>
+
+<footer class="foot wrap">Built as a working guide — not investment, legal, or professional advice. Revisit this workflow every quarter as tools and platforms change.</footer>
+
+<div class="progress-wrap">
+  <div class="wrap">
+    <div class="progress-bar-track"><div class="progress-bar-fill" id="progFill"></div></div>
+    <div class="progress-label"><span id="progText">0 of 0 tasks complete</span><span id="bookmarkCount">0 bookmarked</span></div>
+  </div>
+</div>
+
+<script>
+const STAGES = [
+  {
+    id:'strategy', num:'01', name:'Strategy & Planning', time:'3–4 hrs',
+    title:'Strategy & Planning',
+    desc:'Define who you are selling to, what you are actually saying across three different platforms, and what "working" will mean before you make a single post.',
+    objectives:[
+      'Identify 1–2 core customer segments and what stops them from buying today',
+      'Decide 3 content pillars that connect the product to those segments',
+      'Set one measurable goal per platform for the next 30 days'
+    ],
+    tasks:[
+      'Write a one-paragraph description of your ideal customer, in their own words',
+      'List the 3 content pillars (e.g., "how it\'s made", "customer results", "behind the counter")',
+      'Pick one primary KPI per platform (saves, profile visits, or DMs — not just likes)',
+      'Audit 5 competitors or adjacent brands for tone and format ideas'
+    ],
+    tools:[
+      {name:'Claude', badge:'Best for this stage', why:'Strong at structuring vague business context into a clear positioning statement and content pillars through conversation, and can hold your whole product catalog and brand voice in context.', alt:'ChatGPT (similar strategic use, less consistent long-context recall)'},
+      {name:'Perplexity', badge:null, why:'Fast, cited research on competitor activity and platform trend data without you leaving the strategy doc.', alt:'Google + manual notes (slower, no synthesis)'}
+    ],
+    prompts:[
+      'Here is a description of my product and customer [paste]. Propose 3 content pillars that tie directly to why this customer would buy, and explain the reasoning behind each.',
+      'Act as a skeptical customer of [product]. What objection would stop you from buying after seeing a single Instagram post?'
+    ],
+    best:['Anchor every pillar to a real buying objection, not a content category you find fun','Set the KPI before making content, not after'],
+    mistakes:['Choosing pillars based on what\'s "trendy" instead of what fits the customer','Trying to speak to everyone instead of 1–2 segments'],
+    outputs:['A one-page positioning brief','3 named content pillars','Per-platform KPI targets'],
+    est:'3–4 hours, one sitting',
+    tips:'Do this stage away from your phone — strategy done while scrolling turns into copying competitors instead of thinking.'
+  },
+  {
+    id:'brand', num:'02', name:'Brand & Content Setup', time:'2–3 hrs',
+    title:'Brand & Content Pillars Setup',
+    desc:'Turn the strategy into reusable building blocks: templates, a consistent look, and a caption voice you can repeat without reinventing it each time.',
+    objectives:['Create a visual template system for each platform','Define a written voice guide so captions sound consistent across the team'],
+    tasks:[
+      'Build 2–3 Canva templates per platform (post, story/reel cover, carousel)',
+      'Write a one-page voice guide: 5 words the brand is, 5 it is not',
+      'Save 10 approved brand assets (logo variants, colors, product shots) in one shared folder'
+    ],
+    tools:[
+      {name:'Canva (Magic Studio)', badge:'Best for this stage', why:'Fastest way for a non-designer to produce on-brand templates across formats, with AI resize and background removal built in.', alt:'Adobe Express (similar, tighter Adobe ecosystem fit)'},
+      {name:'Claude', badge:null, why:'Good for drafting the written voice guide and testing captions against it for consistency.', alt:'Notion AI (fine if you already live in Notion)'}
+    ],
+    prompts:[
+      'Based on this positioning brief [paste], write a one-page brand voice guide: 5 adjectives we are, 5 we are not, and 3 example sentences in-voice.',
+      'Rewrite this caption in our brand voice guide [paste guide + caption draft].'
+    ],
+    best:['Lock template sizes to each platform\'s current spec before designing, not after','Keep the voice guide to one page — nobody re-reads a 10-page brand bible'],
+    mistakes:['Designing a beautiful template that doesn\'t fit LinkedIn\'s crop or TikTok\'s safe zones','Skipping the voice guide and getting inconsistent captions from different team members'],
+    outputs:['A reusable template set','A one-page brand voice guide','A shared brand asset folder'],
+    est:'2–3 hours',
+    tips:'Build templates with placeholder text in your actual product category, not lorem ipsum — it reveals sizing problems immediately.'
+  },
+  {
+    id:'create', num:'03', name:'Content Creation', time:'6–8 hrs / cycle',
+    title:'Content Creation',
+    desc:'Batch-produce visuals, short video, and copy for the next 2–4 weeks in one focused session instead of daily scrambling.',
+    objectives:['Produce a month of platform-ready assets in one or two batching sessions','Write captions in-voice for every asset, adapted per platform'],
+    tasks:[
+      'Shoot or source 15–20 raw product photos/clips in one session',
+      'Turn raw assets into templated posts in Canva',
+      'Edit 4–6 short-form videos with captions/hooks in CapCut',
+      'Draft platform-specific captions for every asset with Claude'
+    ],
+    tools:[
+      {name:'Canva (Magic Studio)', badge:'Best for this stage', why:'One tool covers static image editing, background removal, and resizing one asset to every platform\'s dimensions.', alt:'Adobe Photoshop (more control, steeper learning curve)'},
+      {name:'CapCut', badge:'Best for this stage', why:'Free, mobile-first video editor with auto-captions and trending-audio matching built specifically for short-form social video.', alt:'Adobe Premiere Rush (more professional, slower workflow)'},
+      {name:'Claude', badge:null, why:'Writes multiple caption variants per platform from one product description, keeping tone consistent with the voice guide.', alt:'Copy.ai (narrower, less able to hold full brand context)'}
+    ],
+    prompts:[
+      'Here is my brand voice guide [paste] and a description of this product shot [describe]. Write 3 caption variants each for Instagram, LinkedIn, and TikTok, matched to the platform\'s typical tone.',
+      'Give me 8 short-form video hook lines (under 8 words each) for a video showing [product/process], written to stop a scroll in the first second.'
+    ],
+    best:['Batch by asset type (all photos, then all video, then all captions) rather than one post at a time','Write captions after the visual, tailored to what\'s actually on screen'],
+    mistakes:['Writing one caption and copy-pasting it unchanged across all three platforms','Batching content so far ahead it goes stale before it posts'],
+    outputs:['A month of platform-ready visuals and video','Caption sets per platform per asset'],
+    est:'6–8 hours per monthly batch',
+    tips:'Keep a running "hook swipe file" of lines that performed well — reuse the structure, not the exact words.'
+  },
+  {
+    id:'schedule', num:'04', name:'Scheduling & Publishing', time:'1–2 hrs / week',
+    title:'Scheduling & Multi-Platform Publishing',
+    desc:'Get the batched content onto a calendar and out the door on each platform\'s best posting cadence, without daily manual uploads.',
+    objectives:['Load a month of content into a shared calendar','Set platform-appropriate posting frequency and timing'],
+    tasks:[
+      'Upload batched assets and captions into Buffer',
+      'Set posting cadence: e.g., Instagram 4x/week, LinkedIn 2x/week, TikTok 3x/week',
+      'Assign posting time slots based on when your audience is actually active',
+      'Do a final proofread pass before the week goes live'
+    ],
+    tools:[
+      {name:'Buffer', badge:'Best for this stage', why:'Straightforward multi-platform queue with a visual calendar, built for small teams rather than agencies, at a low price point.', alt:'Later (stronger for Instagram-first visual planning specifically)'},
+      {name:'Hootsuite', badge:null, why:'More robust analytics and approval workflows if you bring on a second team member.', alt:'Native platform schedulers (free, but no cross-platform view)'}
+    ],
+    prompts:[
+      'Given these 5 posts for the week [list], suggest a posting order that alternates content pillars so we\'re not repeating the same pillar two days running.'
+    ],
+    best:['Schedule a week ahead maximum — leaves room to react to trends','Always preview how a post looks on each platform before it goes live'],
+    mistakes:['Posting identical content and timing across all platforms regardless of audience habits','Set-and-forget scheduling with no one checking the queue that week'],
+    outputs:['A live, populated posting calendar for the month'],
+    est:'1–2 hours weekly maintenance after initial setup',
+    tips:'Batch-schedule right after the content-creation session while everything is fresh, not on a separate day.'
+  },
+  {
+    id:'engage', num:'05', name:'Engagement & Community', time:'20–30 min / day',
+    title:'Engagement & Community Management',
+    desc:'Turn views into relationships — replying, thanking, and following up in a way that reads as human, not automated.',
+    objectives:['Respond to comments and DMs within a same-day window','Build a light rhythm of engaging with your audience\'s own content'],
+    tasks:[
+      'Reply to every comment and DM daily, drafted in-voice where helpful',
+      'Spend 10 minutes engaging with 5–10 accounts in your customer segment',
+      'Flag recurring questions (pricing, shipping, sizing) for an FAQ or auto-reply'
+    ],
+    tools:[
+      {name:'Claude', badge:'Best for this stage', why:'Good for drafting quick, in-voice reply options to tricky or repetitive comments/DMs that you edit and send yourself.', alt:'ManyChat (for automating simple DM flows like "send me the price")'},
+    ],
+    prompts:[
+      'A customer commented "is this worth the price?" under our post. Draft 3 reply options in our brand voice that address the objection without being defensive.'
+    ],
+    best:['Never let AI auto-send a reply to a real customer without a human read first','Track questions that repeat 3+ times — that\'s your next FAQ post'],
+    mistakes:['Only replying to positive comments and ignoring critical ones','Engaging generically ("Nice!") instead of specifically'],
+    outputs:['A same-day response habit','A running FAQ list drawn from real questions'],
+    est:'20–30 minutes daily',
+    tips:'Set two fixed times a day to check messages rather than reacting to every notification — protects focus time for creation.'
+  },
+  {
+    id:'analyze', num:'06', name:'Analytics & Optimization', time:'2 hrs / month',
+    title:'Analytics & Optimization',
+    desc:'Close the loop — find out what actually worked, and feed that back into next month\'s content pillars and formats.',
+    objectives:['Identify top and bottom performing posts by platform','Turn findings into 2–3 concrete changes for the next cycle'],
+    tasks:[
+      'Export or screenshot each platform\'s native analytics for the month',
+      'Summarize patterns: which pillar, format, and time performed best',
+      'Write 2–3 specific changes to test next cycle'
+    ],
+    tools:[
+      {name:'Claude', badge:'Best for this stage', why:'Can take raw exported numbers or pasted screenshots\' data and turn them into a plain-language summary of what worked and why, faster than manual spreadsheet review.', alt:'Google Sheets + manual pivot tables (more control, much slower)'},
+    ],
+    prompts:[
+      'Here are this month\'s post performance numbers by platform and pillar [paste data]. Summarize what worked, what didn\'t, and 3 specific changes to make next month.'
+    ],
+    best:['Compare performance by content pillar, not just by individual post','Test one variable at a time next cycle so you know what caused the change'],
+    mistakes:['Judging performance by likes alone instead of the KPI set in Stage 1','Changing everything at once, making it impossible to tell what worked'],
+    outputs:['A monthly performance summary','2–3 named changes for next cycle'],
+    est:'2 hours monthly',
+    tips:'Keep a simple running log (one row per month) so you can see trends over a full quarter, not just month to month.'
+  },
+  {
+    id:'scale', num:'07', name:'Scaling & Automation', time:'Ongoing',
+    title:'Scaling & Automation',
+    desc:'Once the cycle is proven, remove manual steps and consider bringing in paid amplification or a second pair of hands.',
+    objectives:['Automate the repeatable, low-judgment steps of the workflow','Decide if/when to add paid promotion or a hire'],
+    tasks:[
+      'Set up a simple automation (e.g., new photo folder → auto-added to a Canva template)',
+      'Test a small paid boost on your single best-performing post per platform',
+      'Document the whole workflow so a future hire or freelancer could run it'
+    ],
+    tools:[
+      {name:'Zapier / Make', badge:'Best for this stage', why:'No-code automation to connect the tools you already use (storage, Canva, Buffer) without hiring a developer.', alt:'Native app integrations (fewer steps, less flexible)'},
+      {name:'Claude', badge:null, why:'Good for turning your working process into a clear, written SOP a new hire could follow on day one.', alt:'Loom + a written doc (more visual, more time to produce)'}
+    ],
+    prompts:[
+      'Turn this description of our monthly content process [paste rough notes] into a clear, numbered SOP a new freelancer could follow without asking us questions.'
+    ],
+    best:['Automate only steps that need no judgment call — keep a human on anything customer-facing','Boost proven content, don\'t pay to promote something untested'],
+    mistakes:['Automating too early, before the manual process is even reliable','Boosting posts based on gut feeling instead of the KPI data from Stage 6'],
+    outputs:['At least one working automation','A documented SOP','A tested paid-boost result'],
+    est:'Ongoing, revisit quarterly',
+    tips:'Every automation should save time on something you\'ve now done manually at least 3 times — don\'t automate a one-off.'
+  }
+];
+
+const stagesEl = document.getElementById('stages');
+const roadmapEl = document.getElementById('roadmap');
+
+function taskKey(stageId,i){ return 'awa_task_'+stageId+'_'+i; }
+function noteKey(stageId){ return 'awa_note_'+stageId; }
+function bmKey(stageId){ return 'awa_bm_'+stageId; }
+
+STAGES.forEach((s, idx)=>{
+  // roadmap stop
+  const stop = document.createElement('div');
+  stop.className = 'stage-stop' + (idx===0?' active':'');
+  stop.dataset.target = s.id;
+  stop.innerHTML = `<div class="stage-check" id="check_${s.id}"></div><div class="stage-num">${s.num}</div><div class="stage-name">${s.name}</div><div class="stage-time">${s.time}</div>`;
+  stop.addEventListener('click', ()=>{
+    document.getElementById('panel_'+s.id).scrollIntoView({behavior:'smooth', block:'start'});
+    document.querySelectorAll('.stage-stop').forEach(el=>el.classList.remove('active'));
+    stop.classList.add('active');
+  });
+  roadmapEl.appendChild(stop);
+
+  // panel
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  panel.id = 'panel_'+s.id;
+
+  const toolsHtml = s.tools.map(t=>`
+    <div class="tool-card">
+      <div class="tool-row"><span class="tool-name">${t.name}</span>${t.badge?`<span class="badge${t.badge.includes('Best')?'':' gold'}">${t.badge}</span>`:''}</div>
+      <div class="tool-why">${t.why}</div>
+      <div class="tool-alt">Alternative: <b>${t.alt}</b></div>
+    </div>`).join('');
+
+  const tasksHtml = s.tasks.map((t,i)=>`
+    <li><input type="checkbox" data-key="${taskKey(s.id,i)}" onchange="onTaskToggle('${s.id}')"> ${t}</li>`).join('');
+
+  const promptsHtml = s.prompts.map(p=>`<div class="prompt-box">${p}<button class="copybtn" onclick="copyPrompt(this)">Copy</button></div>`).join('');
+
+  const bestHtml = s.best.map(b=>`<div class="note-line"><span class="mk">✓</span><span>${b}</span></div>`).join('');
+  const mistakeHtml = s.mistakes.map(m=>`<div class="mistake-line"><span class="mk">✕</span><span>${m}</span></div>`).join('');
+  const outputHtml = s.outputs.map(o=>`<li>${o}</li>`).join('');
+
+  panel.innerHTML = `
+    <div class="panel-head">
+      <div>
+        <div class="panel-meta">Stage ${s.num} · ${s.time}</div>
+        <h2 class="panel-title">${s.title}</h2>
+      </div>
+    </div>
+    <p class="panel-desc">${s.desc}</p>
+
+    <div class="grid2">
+      <div>
+        <h3 class="block-title">Objectives</h3>
+        <ul class="plain">${s.objectives.map(o=>`<li>${o}</li>`).join('')}</ul>
+        <h3 class="block-title">Tasks</h3>
+        <ul class="tasklist">${tasksHtml}</ul>
+      </div>
+      <div>
+        <h3 class="block-title">Best AI tools for this stage</h3>
+        ${toolsHtml}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <h3 class="block-title">Prompt examples</h3>
+        ${promptsHtml}
+        <h3 class="block-title">Expected outputs</h3>
+        <ul class="plain">${outputHtml}</ul>
+        <div class="stat-row">
+          <div class="stat"><b>${s.est}</b>Time estimate</div>
+        </div>
+      </div>
+      <div>
+        <h3 class="block-title">Best practices</h3>
+        ${bestHtml}
+        <h3 class="block-title" style="margin-top:14px;">Common mistakes</h3>
+        ${mistakeHtml}
+        <h3 class="block-title" style="margin-top:14px;">Efficiency tip</h3>
+        <p style="font-size:14px; color:var(--ink-soft); margin:0 0 16px;">${s.tips}</p>
+      </div>
+    </div>
+
+    <h3 class="block-title">Your notes</h3>
+    <textarea class="notes-area" placeholder="Jot anything specific to your business here..." id="notes_${s.id}" onchange="saveNote('${s.id}')"></textarea>
+    <button class="bookmark-btn" id="bm_${s.id}" onclick="toggleBookmark('${s.id}')">☆ Bookmark this stage</button>
+  `;
+  stagesEl.appendChild(panel);
+});
+
+// ---- Decision tree ----
+const dtreeEl = document.getElementById('dtree');
+dtreeEl.innerHTML = `
+  <div class="dnode">
+    <div class="q">Do you already have a documented content strategy (pillars + KPIs)?</div>
+    <div class="opts">
+      <button onclick="showResult('r1')">No, starting fresh</button>
+      <button onclick="showResult('r2')">Yes, I have one</button>
+    </div>
+  </div>
+  <div class="dresult" id="r1">Start with <b>Claude</b> for Stage 1 (Strategy &amp; Planning) — get your pillars and KPIs defined before touching design tools.</div>
+  <div class="dresult" id="r2">Skip to Stage 3 (Content Creation) and start with <b>Canva</b> for visuals, <b>CapCut</b> for video.</div>
+`;
+function showResult(id){
+  document.querySelectorAll('.dresult').forEach(el=>el.classList.remove('show'));
+  document.getElementById(id).classList.add('show');
+}
+
+// ---- Persistence ----
+function copyPrompt(btn){
+  const text = btn.parentElement.childNodes[0].textContent.trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    const old = btn.textContent; btn.textContent='Copied!';
+    setTimeout(()=>btn.textContent=old, 1400);
+  });
+}
+function saveNote(stageId){
+  const val = document.getElementById('notes_'+stageId).value;
+  localStorage.setItem(noteKey(stageId), val);
+}
+function toggleBookmark(stageId){
+  const key = bmKey(stageId);
+  const cur = localStorage.getItem(key) === '1';
+  localStorage.setItem(key, cur? '0':'1');
+  renderBookmark(stageId);
+  updateBookmarkCount();
+}
+function renderBookmark(stageId){
+  const btn = document.getElementById('bm_'+stageId);
+  const saved = localStorage.getItem(bmKey(stageId)) === '1';
+  btn.classList.toggle('saved', saved);
+  btn.textContent = saved ? '★ Bookmarked' : '☆ Bookmark this stage';
+}
+function updateBookmarkCount(){
+  let count = 0;
+  STAGES.forEach(s=>{ if(localStorage.getItem(bmKey(s.id))==='1') count++; });
+  document.getElementById('bookmarkCount').textContent = count + ' bookmarked';
+}
+function onTaskToggle(stageId){
+  saveAllTasks();
+  updateProgress();
+  updateStageCheck(stageId);
+}
+function saveAllTasks(){
+  document.querySelectorAll('.tasklist input[type=checkbox]').forEach(cb=>{
+    localStorage.setItem(cb.dataset.key, cb.checked ? '1':'0');
+  });
+}
+function updateStageCheck(stageId){
+  const boxes = document.querySelectorAll(`#panel_${stageId} .tasklist input[type=checkbox]`);
+  const allDone = Array.from(boxes).every(b=>b.checked);
+  const el = document.getElementById('check_'+stageId);
+  el.classList.toggle('done', allDone && boxes.length>0);
+  el.textContent = allDone && boxes.length>0 ? '✓' : '';
+}
+function updateProgress(){
+  const boxes = document.querySelectorAll('.tasklist input[type=checkbox]');
+  const total = boxes.length;
+  const done = Array.from(boxes).filter(b=>b.checked).length;
+  const pct = total? Math.round(done/total*100):0;
+  document.getElementById('progFill').style.width = pct+'%';
+  document.getElementById('progText').textContent = `${done} of ${total} tasks complete`;
+}
+function loadState(){
+  document.querySelectorAll('.tasklist input[type=checkbox]').forEach(cb=>{
+    cb.checked = localStorage.getItem(cb.dataset.key) === '1';
+  });
+  STAGES.forEach(s=>{
+    document.getElementById('notes_'+s.id).value = localStorage.getItem(noteKey(s.id)) || '';
+    renderBookmark(s.id);
+    updateStageCheck(s.id);
+  });
+  updateProgress();
+  updateBookmarkCount();
+}
+function toggleTheme(){
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', isDark? 'light':'dark');
+  localStorage.setItem('awa_theme', isDark? 'light':'dark');
+  document.getElementById('themeBtn').textContent = isDark? 'Dark mode':'Light mode';
+}
+(function initTheme(){
+  const saved = localStorage.getItem('awa_theme');
+  if(saved === 'dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('themeBtn').textContent = 'Light mode';
+  }
+})();
+
+// intersection observer to highlight active roadmap stop on scroll
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      const id = entry.target.id.replace('panel_','');
+      document.querySelectorAll('.stage-stop').forEach(el=>{
+        el.classList.toggle('active', el.dataset.target===id);
+      });
+    }
+  });
+}, {rootMargin:'-40% 0px -50% 0px'});
+document.querySelectorAll('.panel[id^="panel_"]').forEach(p=>observer.observe(p));
+
+loadState();
+</script>
+</body>
+</html>
