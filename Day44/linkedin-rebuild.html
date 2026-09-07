@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LinkedIn Profile Rebuild — Azad Singh</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E141B;
+    --panel:#161F29;
+    --panel-2:#1D2733;
+    --line:#2A3644;
+    --text:#E7ECF1;
+    --muted:#8B98A6;
+    --amber:#E8A33D;
+    --amber-dim:#4A3A22;
+    --red:#E06A5F;
+    --red-dim:#3A2422;
+    --green:#5CBF8C;
+    --green-dim:#1E3129;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 60px;}
+
+  /* header */
+  .header{
+    display:flex; align-items:center; justify-content:space-between;
+    border:1px solid var(--line); background:var(--panel);
+    border-radius:10px; padding:22px 24px; gap:20px; flex-wrap:wrap;
+  }
+  .header .id{flex:1; min-width:220px;}
+  .header .id .role{ color:var(--muted); font-family:var(--mono); font-size:12.5px; letter-spacing:.02em;}
+  .header h1{margin:4px 0 6px; font-size:22px; font-weight:600;}
+  .header .target{ font-size:13.5px; color:var(--amber); font-family:var(--mono);}
+  .gauge-block{display:flex; align-items:center; gap:14px;}
+  .gauge-num{font-family:var(--mono); text-align:right;}
+  .gauge-num .big{font-size:30px; font-weight:600; line-height:1;}
+  .gauge-num .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em;}
+  .arrow{color:var(--muted); font-size:20px;}
+
+  /* tabs (pure CSS, radio-driven) */
+  .tab-radio{display:none;}
+  .tabs{
+    display:flex; gap:2px; margin:22px 0 0; background:var(--panel);
+    border:1px solid var(--line); border-radius:9px; padding:4px; overflow-x:auto;
+  }
+  label.tab{
+    flex:1; text-align:center; padding:10px 8px; font-size:12.5px; font-family:var(--mono);
+    color:var(--muted); border-radius:6px; cursor:pointer; white-space:nowrap; user-select:none;
+    transition:background .15s,color .15s; display:block;
+  }
+  label.tab:hover{color:var(--text);}
+
+  .panel{display:none; margin-top:18px;}
+
+  #tab-roast:checked ~ .tabs label[for="tab-roast"],
+  #tab-rebuild:checked ~ .tabs label[for="tab-rebuild"],
+  #tab-scorecard:checked ~ .tabs label[for="tab-scorecard"],
+  #tab-plan:checked ~ .tabs label[for="tab-plan"],
+  #tab-summary:checked ~ .tabs label[for="tab-summary"]{
+    background:var(--amber); color:#1A1204; font-weight:600;
+  }
+
+  #tab-roast:checked ~ #roast,
+  #tab-rebuild:checked ~ #rebuild,
+  #tab-scorecard:checked ~ #scorecard,
+  #tab-plan:checked ~ #plan,
+  #tab-summary:checked ~ #summary{
+    display:block;
+  }
+
+  section.card{
+    background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:22px 24px; margin-bottom:16px;
+  }
+  h2.section-title{
+    font-size:16px; margin:0 0 4px; font-weight:600;
+  }
+  .section-sub{color:var(--muted); font-size:13px; margin-bottom:16px;}
+
+  /* report card rows */
+  .rc-row{border-top:1px solid var(--line); padding:16px 0;}
+  .rc-row:first-of-type{border-top:none; padding-top:0;}
+  .rc-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap;}
+  .rc-name{font-weight:600; font-size:14.5px;}
+  .rc-score{font-family:var(--mono); font-size:14px; color:var(--amber); font-weight:600;}
+  .rc-reaction{font-size:13px; color:var(--muted); margin-top:4px; font-style:italic;}
+  .rc-detail{margin-top:10px; font-size:13.5px; line-height:1.55;}
+  .rc-detail p{margin:6px 0;}
+  .quote{
+    display:block; background:var(--panel-2); border-left:3px solid var(--red);
+    padding:8px 12px; margin:8px 0; font-family:var(--mono); font-size:12.5px; color:#D7A9A3;
+    border-radius:0 4px 4px 0;
+  }
+  .tag{display:inline-block; font-family:var(--mono); font-size:10.5px; letter-spacing:.03em; padding:2px 7px; border-radius:4px; margin-right:6px;}
+  .tag.problem{background:var(--red-dim); color:var(--red);}
+  .tag.cost{background:var(--amber-dim); color:var(--amber);}
+
+  .overall-strip{
+    display:flex; align-items:center; justify-content:space-between; margin-top:6px;
+    padding-top:16px; border-top:1px solid var(--line);
+  }
+  .overall-strip .lbl{font-family:var(--mono); font-size:13px; color:var(--muted);}
+  .overall-strip .val{font-family:var(--mono); font-size:22px; font-weight:600; color:var(--red);}
+
+  /* rebuild */
+  .option{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px;
+    padding:14px 16px; margin-bottom:10px;
+  }
+  .option .otag{font-family:var(--mono); font-size:11px; color:var(--amber); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;}
+  .option .headline-text{font-size:14.5px; font-weight:500; line-height:1.5;}
+  .option .why{font-size:12.5px; color:var(--muted); margin-top:8px;}
+
+  .about-block{
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:18px;
+    font-size:14px; line-height:1.7; white-space:pre-line;
+  }
+  .about-line-label{font-family:var(--mono); font-size:10.5px; color:var(--amber); display:block; margin-top:14px; margin-bottom:2px;}
+  .about-line-label:first-child{margin-top:0;}
+  .fill-in{color:var(--amber); font-weight:600;}
+
+  .kw-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px;}
+  .kw{font-family:var(--mono); font-size:11.5px; background:var(--amber-dim); color:var(--amber); padding:3px 9px; border-radius:12px;}
+
+  .ba-row{display:grid; grid-template-columns:1fr 24px 1fr; gap:10px; align-items:start; margin-bottom:14px; font-size:13px;}
+  .ba-row .before{color:var(--muted); border-left:3px solid var(--red); padding-left:10px;}
+  .ba-row .after{color:var(--text); border-left:3px solid var(--green); padding-left:10px;}
+  .ba-row .arw{color:var(--muted); text-align:center; padding-top:2px;}
+  .ba-lbl{font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:3px;}
+  .ba-row .before .ba-lbl{color:var(--red);}
+  .ba-row .after .ba-lbl{color:var(--green);}
+
+  .skill-cols{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media(max-width:640px){.skill-cols{grid-template-columns:1fr;}}
+  .skill-cols h3{font-size:12.5px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.04em; margin:0 0 10px;}
+  .skill-cols.add h3{color:var(--green);}
+  .skill-cols .col{}
+  .skill-item{display:flex; gap:8px; font-size:13px; padding:6px 0; border-top:1px solid var(--line);}
+  .skill-item:first-child{border-top:none;}
+  .skill-item .n{font-family:var(--mono); color:var(--muted); width:16px; flex-shrink:0;}
+  .pin-row{margin-top:14px; padding-top:14px; border-top:1px solid var(--line); font-size:13px;}
+  .pin-row .pins{color:var(--amber); font-family:var(--mono); font-size:12.5px;}
+
+  /* scorecard table */
+  table.scorecard{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.scorecard th{text-align:left; font-family:var(--mono); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; padding:8px 6px; border-bottom:1px solid var(--line);}
+  table.scorecard td{padding:10px 6px; border-bottom:1px solid var(--line);}
+  table.scorecard td.num{font-family:var(--mono);}
+  table.scorecard td.before-c{color:var(--red);}
+  table.scorecard td.after-c{color:var(--green);}
+  table.scorecard td.change{color:var(--amber); font-weight:600;}
+  .overall-final{display:flex; align-items:center; justify-content:space-between; margin-top:18px; padding:16px 18px; background:var(--panel-2); border-radius:8px;}
+  .overall-final .num{font-family:var(--mono); font-size:26px; font-weight:600;}
+  .overall-final .num .before-c{color:var(--red);}
+  .overall-final .num .after-c{color:var(--green);}
+  .overall-final .num .arrow{color:var(--muted); margin:0 8px; font-size:18px;}
+
+  /* plan */
+  .day{border:1px solid var(--line); border-radius:9px; margin-bottom:12px; overflow:hidden;}
+  .day-head{display:flex; align-items:center; gap:12px; padding:14px 18px; background:var(--panel-2); cursor:pointer; list-style:none;}
+  .day-head::-webkit-details-marker{display:none;}
+  .day-head .dnum{font-family:var(--mono); color:var(--amber); font-weight:600; font-size:13px; width:52px; flex-shrink:0;}
+  .day-head .dtitle{font-size:13.5px; font-weight:500; flex:1;}
+  .day-head .chev{color:var(--muted); transition:transform .15s;}
+  .day[open] .chev{transform:rotate(90deg);}
+  .day-body{padding:16px 18px 18px; font-size:13.5px; line-height:1.6;}
+  .checklist div{padding:5px 0; padding-left:20px; position:relative;}
+  .checklist div:before{content:"□"; position:absolute; left:0; color:var(--amber); font-family:var(--mono);}
+  .post-draft{
+    background:var(--panel); border:1px solid var(--line); border-left:3px solid var(--amber);
+    border-radius:0 6px 6px 0; padding:12px 14px; margin-top:10px; font-size:13px; white-space:pre-line;
+    line-height:1.55;
+  }
+  .char-count{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:6px;}
+  .formula{font-family:var(--mono); font-size:12.5px; background:var(--panel); border:1px solid var(--line); padding:8px 12px; border-radius:6px; margin:10px 0; color:var(--amber);}
+  .target-list{margin:8px 0 0; padding-left:18px; font-size:13px; color:var(--muted);}
+  .target-list li{margin-bottom:4px;}
+
+  /* summary card */
+  .summary-card{
+    background:linear-gradient(160deg, #1D2733 0%, #161F29 100%);
+    border:1px solid var(--amber-dim); border-radius:12px; padding:26px 28px;
+    font-family:var(--sans);
+  }
+  .summary-card .sc-top{font-family:var(--mono); font-size:12px; color:var(--muted); margin-bottom:14px;}
+  .summary-card h3{margin:0 0 16px; font-size:17px; line-height:1.4;}
+  .sc-scores{display:flex; gap:24px; margin-bottom:18px;}
+  .sc-scores div{font-family:var(--mono);}
+  .sc-scores .n{font-size:26px; font-weight:600;}
+  .sc-scores .l{font-size:10.5px; color:var(--muted); text-transform:uppercase;}
+  .sc-scores .before-c .n{color:var(--red);}
+  .sc-scores .after-c .n{color:var(--green);}
+  .sc-mistakes ol{margin:0; padding-left:20px; font-size:13.5px; line-height:1.7;}
+  .sc-winner{margin-top:16px; padding-top:16px; border-top:1px dashed var(--line); font-size:13.5px;}
+  .sc-winner .l{font-family:var(--mono); font-size:10.5px; color:var(--amber); text-transform:uppercase; display:block; margin-bottom:4px;}
+  .copy-btn{
+    margin-top:18px; background:var(--amber); color:#1A1204; border:none; padding:9px 16px;
+    border-radius:6px; font-family:var(--sans); font-weight:600; font-size:12.5px; cursor:pointer;
+  }
+  .copy-btn:active{transform:translateY(1px);}
+  .copy-note{font-size:11.5px; color:var(--muted); margin-top:8px; font-family:var(--mono);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="id">
+      <div class="role">LINKEDIN PROFILE AUDIT · TARGET ROLE: NETWORK ENGINEER</div>
+      <h1>Azad Singh</h1>
+      <div class="target">12+ yrs ITSM background → pivoting to Network Engineering</div>
+    </div>
+    <div class="gauge-block">
+      <div class="gauge-num"><div class="big" style="color:var(--red)">44</div><div class="lbl">Before</div></div>
+      <div class="arrow">→</div>
+      <div class="gauge-num"><div class="big" style="color:var(--green)">82</div><div class="lbl">After</div></div>
+    </div>
+  </div>
+
+  <input type="radio" name="tabs" id="tab-roast" class="tab-radio" checked>
+  <input type="radio" name="tabs" id="tab-rebuild" class="tab-radio">
+  <input type="radio" name="tabs" id="tab-scorecard" class="tab-radio">
+  <input type="radio" name="tabs" id="tab-plan" class="tab-radio">
+  <input type="radio" name="tabs" id="tab-summary" class="tab-radio">
+
+  <div class="tabs">
+    <label class="tab" for="tab-roast">1. Roast</label>
+    <label class="tab" for="tab-rebuild">2. Rebuild</label>
+    <label class="tab" for="tab-scorecard">3. Scorecard</label>
+    <label class="tab" for="tab-plan">4. 7-Day Plan</label>
+    <label class="tab" for="tab-summary">5. Summary</label>
+  </div>
+
+  <!-- PART 1: ROAST -->
+  <div class="panel" id="roast">
+    <section class="card">
+      <h2 class="section-title">Profile Report Card — BEFORE</h2>
+      <div class="section-sub">What a recruiter actually thinks in the first 3 seconds of each section.</div>
+
+      <div class="rc-row">
+        <div class="rc-head"><div class="rc-name">Headline</div><div class="rc-score">4 / 10</div></div>
+        <div class="rc-reaction">"Is this an ITSM guy or a network guy? Skip."</div>
+        <div class="rc-detail">
+          <span class="quote">ITSM Process & Documentation | IT Operations & Team Lead | Incident & Major Incident Management | ServiceNow | ITIL | Networking | AI Automation | Continuous-Learning</span>
+          <p><span class="tag problem">PROBLEM</span> Eight things fighting for attention and "Networking" is buried 6th out of 8. A recruiter searching "Network Engineer" sees ServiceNow, ITIL, and AI Automation before they see anything network-related.</p>
+          <p><span class="tag cost">COST</span> LinkedIn's search ranks headline keywords heavily. Right now you're optimized to show up for ITSM/Service Desk searches — the career you're leaving, not the one you're going into.</p>
+        </div>
+      </div>
+
+      <div class="rc-row">
+        <div class="rc-head"><div class="rc-name">About — First 2 Lines (the hook)</div><div class="rc-score">3 / 10</div></div>
+        <div class="rc-reaction">"Generic certified-professional opener. Closing the 'see more.'"</div>
+        <div class="rc-detail">
+          <span class="quote">ITIL-certified Senior ITSM professional with 12+ years of experience supporting global users across APAC, EMEA, US and UK.</span>
+          <p><span class="tag problem">PROBLEM</span> This is the single most important real estate on your entire profile — the only part visible before "see more" — and it opens with a credential, not a hook. There's zero mention of Network Engineering here at all.</p>
+          <p><span class="tag cost">COST</span> Most viewers never click "see more." If they don't click, your whole rewrite story — the pivot, the infrastructure skills, the 12 years of depth — never gets read.</p>
+        </div>
+      </div>
+
+      <div class="rc-row">
+        <div class="rc-head"><div class="rc-name">About — Full Section</div><div class="rc-score">5 / 10</div></div>
+        <div class="rc-reaction">"Competent, forgettable, no numbers, no ask."</div>
+        <div class="rc-detail">
+          <p><span class="tag problem">PROBLEM</span> It's a list of tools and traits ("SLA-driven support, stakeholder communication, documentation, knowledge management") — not a story. Zero numbers. Zero outcomes. No line tells the reader what to do next (message you? view your experience?).</p>
+          <p><span class="tag cost">COST</span> This reads as safe and interchangeable with thousands of other ITSM profiles. It also does nothing to explain your pivot — a recruiter reading this has no idea you're now doing hands-on network engineering.</p>
+        </div>
+      </div>
+
+      <div class="rc-row">
+        <div class="rc-head"><div class="rc-name">Experience — IT Infrastructure Operations Specialist</div><div class="rc-score">4 / 10</div></div>
+        <div class="rc-reaction">"Reads like the job description he was handed on day one."</div>
+        <div class="rc-detail">
+          <span class="quote">Provide enterprise IT support, incident management and infrastructure administration for campus users.</span>
+          <p><span class="tag problem">PROBLEM</span> Every bullet starts with a passive, responsibility-style verb ("Provide," "Manage," "Prepare," "Support") instead of an achievement verb. There isn't a single number — not devices managed, not users supported, not incidents resolved, not uptime, nothing.</p>
+          <p><span class="tag cost">COST</span> Hiring managers scan for proof of impact, not proof you showed up. Without numbers, this bullet list is indistinguishable from a generic job posting — it doesn't answer "so what did you actually achieve here?"</p>
+        </div>
+      </div>
+
+      <div class="rc-row">
+        <div class="rc-head"><div class="rc-name">Skills & Keywords</div><div class="rc-score">5 / 10</div></div>
+        <div class="rc-reaction">"Half network, half help-desk — search algorithms won't know what to rank you for."</div>
+        <div class="rc-detail">
+          <p><span class="tag problem">PROBLEM</span> Your listed skills mix M365/Intune/ServiceNow (ITSM tooling) with networking skills, with no clear top-3. LinkedIn's search weighs your top pinned skills heavily — right now nothing signals "hire this person to run my network."</p>
+          <p><span class="tag cost">COST</span> You're diluting your searchability for the role you actually want. Recruiters filtering by skill for "Network Engineer" roles may not surface your profile at all if your top skills are ITSM-flavored.</p>
+        </div>
+      </div>
+
+      <div class="overall-strip">
+        <div class="lbl">OVERALL PROFILE STRENGTH</div>
+        <div class="val">44 / 100</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- PART 2: REBUILD -->
+  <div class="panel" id="rebuild">
+
+    <section class="card">
+      <h2 class="section-title">Headline — 3 Options</h2>
+      <div class="section-sub">Formula: [Role/Identity] | [Who I help or what I do] | [Proof or differentiator]</div>
+
+      <div class="option">
+        <div class="otag">Option 1 — Keyword-Optimized (for search visibility)</div>
+        <div class="headline-text">Network Engineer | LAN/WAN, VLAN, Switching & Firewall Administration | Cisco Meraki · Fortinet · Azure AD</div>
+        <div class="why">Use this when: you want to be found. Leads with the exact job title recruiters search, front-loads the tools they filter by (Meraki, Fortinet), and drops the ITSM keywords that were competing for space.</div>
+      </div>
+
+      <div class="option">
+        <div class="otag">Option 2 — Value-Proposition (for client / hiring-manager attraction)</div>
+        <div class="headline-text">Network Engineer | Keeping Campus Networks Fast, Secure & Always-On | 12+ Yrs in IT Infrastructure & Operations</div>
+        <div class="why">Use this when: a hiring manager (not just a keyword filter) is the reader. It answers "what do you actually deliver" instead of just listing tools, and reframes your 12 years as depth rather than a different career.</div>
+      </div>
+
+      <div class="option">
+        <div class="otag">Option 3 — Authority Style (for thought leadership / standing out)</div>
+        <div class="headline-text">Network Engineer & Former Global ITSM Lead | Bridging Infrastructure, Support Operations & Incident Response</div>
+        <div class="why">Use this when: you want your ITSM background to be a differentiator, not baggage. This is the strongest option long-term — it positions the pivot as a strength ("I understand both the network and the people who depend on it") instead of hiding it.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">About Section — Complete Rewrite</h2>
+      <div class="about-block">
+<span class="about-line-label">HOOK (before "see more")</span>I keep university networks running — and I used to keep global IT teams running before that.
+
+<span class="about-line-label">STORY</span>I'm a Network Engineer at GLA University, handling VLAN configuration, switching, Cisco Meraki infrastructure, and Fortinet firewall administration for the campus network. Before this, I spent 12+ years leading ITSM and incident management for global teams across APAC, EMEA, US and UK — so I don't just configure networks, I understand what happens to real users when they go down.
+
+<span class="about-line-label">PROOF</span>→ <span class="fill-in">[Add: number of users/devices/endpoints your network supports — even an estimate, e.g. "2,000+ campus users"]</span>
+→ <span class="fill-in">[Add: one concrete infrastructure project — e.g. a VLAN redesign, a firewall migration, an access-point rollout — with a rough scale or outcome]</span>
+→ 12+ years across Microsoft 365, Azure AD, Intune, ServiceNow, VPN and enterprise networking — ITIL Foundation certified.
+
+<span class="about-line-label">CTA</span>Open to Network Engineer / Network Security conversations — feel free to message me or check my experience below.</div>
+      <div class="kw-list">
+        <span class="kw">Network Engineer</span><span class="kw">VLAN</span><span class="kw">Cisco Meraki</span>
+        <span class="kw">Fortinet</span><span class="kw">Switching</span><span class="kw">Firewall Administration</span>
+        <span class="kw">Azure AD</span><span class="kw">Microsoft 365</span><span class="kw">Incident Management</span>
+        <span class="kw">ITIL</span>
+      </div>
+      <p style="font-size:12.5px; color:var(--muted); margin-top:10px;">I left the two PROOF lines with fill-in prompts on purpose — you have real numbers (campus size, project scope) that I don't have. Never let an AI or a rewrite invent a metric for you; a fabricated stat is worse than no stat if it comes up in an interview.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Experience — Top Entry Rewrite</h2>
+      <div class="section-sub">IT Infrastructure Operations Specialist · GLA University</div>
+
+      <div class="ba-row">
+        <div class="before"><span class="ba-lbl">Before</span>Provide enterprise IT support, incident management and infrastructure administration for campus users.</div>
+        <div class="arw">→</div>
+        <div class="after"><span class="ba-lbl">After</span>Administer campus-wide network infrastructure and lead incident response for <span class="fill-in">[X]</span> users, resolving connectivity and access issues across the university network.</div>
+      </div>
+      <div class="ba-row">
+        <div class="before"><span class="ba-lbl">Before</span>Manage Microsoft 365, Azure AD, firewall policies, VPN, VLANs and user access.</div>
+        <div class="arw">→</div>
+        <div class="after"><span class="ba-lbl">After</span>Configure and maintain VLANs, Fortinet firewall policies and VPN access across the campus network, alongside Microsoft 365 and Azure AD administration for <span class="fill-in">[X]</span> accounts.</div>
+      </div>
+      <div class="ba-row">
+        <div class="before"><span class="ba-lbl">Before</span>Prepare SLA, incident trend and service performance reports.</div>
+        <div class="arw">→</div>
+        <div class="after"><span class="ba-lbl">After</span>Build SLA and incident-trend reporting used to <span class="fill-in">[track network uptime / flag recurring outages / justify infrastructure changes — pick what's true]</span>.</div>
+      </div>
+      <div class="ba-row">
+        <div class="before"><span class="ba-lbl">Before</span>Support ITSM processes, escalation handling and knowledge documentation.</div>
+        <div class="arw">→</div>
+        <div class="after"><span class="ba-lbl">After</span>Own escalation handling for infrastructure incidents and maintain network documentation/knowledge base, reducing repeat troubleshooting time.</div>
+      </div>
+      <p style="font-size:12.5px; color:var(--muted);">Every bracketed <span class="fill-in">[X]</span> is a real number only you have — approximate campus user count, device count, or ticket volume. Fill those in and these bullets go from "responsibility" to "achievement" instantly.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="section-title">Skills Recommendations</h2>
+      <div class="skill-cols">
+        <div class="col add">
+          <h3>Add (priority order)</h3>
+          <div class="skill-item"><span class="n">1</span>CCNA / Cisco Networking Certification (in progress or planned)</div>
+          <div class="skill-item"><span class="n">2</span>Routing & Switching</div>
+          <div class="skill-item"><span class="n">3</span>Network Security Fundamentals</div>
+          <div class="skill-item"><span class="n">4</span>Cisco Meraki</div>
+          <div class="skill-item"><span class="n">5</span>Fortinet Firewall Administration</div>
+          <div class="skill-item"><span class="n">6</span>VLAN Configuration</div>
+          <div class="skill-item"><span class="n">7</span>TCP/IP</div>
+          <div class="skill-item"><span class="n">8</span>Network Troubleshooting</div>
+          <div class="skill-item"><span class="n">9</span>DHCP</div>
+          <div class="skill-item"><span class="n">10</span>Network Documentation</div>
+        </div>
+        <div class="col remove">
+          <h3 style="color:var(--red)">Remove / de-prioritize</h3>
+          <div class="skill-item"><span class="n">–</span>Salesforce (irrelevant to Network Engineer search, dilutes results)</div>
+          <div class="skill-item"><span class="n">–</span>Jira (not a target-role keyword)</div>
+          <div class="skill-item"><span class="n">–</span>"AI Automation" as a standalone skill (too vague to rank for — fine as a headline flourish, not a skill tag)</div>
+          <div class="skill-item"><span class="n">–</span>"Continuous-Learning" (not something recruiters filter by — it's a trait, not a keyword)</div>
+        </div>
+      </div>
+      <div class="pin-row">Pin to top 3: <span class="pins">Networking (Cisco Meraki) · Fortinet Firewall Administration · VLAN Configuration</span></div>
+    </section>
+  </div>
+
+  <!-- PART 3: SCORECARD -->
+  <div class="panel" id="scorecard">
+    <section class="card">
+      <h2 class="section-title">Before vs After Scorecard</h2>
+      <table class="scorecard">
+        <tr><th>Section</th><th>Before</th><th></th><th>After</th><th>Change</th></tr>
+        <tr>
+          <td>Headline</td><td class="num before-c">4/10</td><td class="arw">→</td><td class="num after-c">8/10</td><td class="num change">+4</td>
+        </tr>
+        <tr>
+          <td>About (Hook)</td><td class="num before-c">3/10</td><td class="arw">→</td><td class="num after-c">9/10</td><td class="num change">+6</td>
+        </tr>
+        <tr>
+          <td>About (Full)</td><td class="num before-c">5/10</td><td class="arw">→</td><td class="num after-c">8/10</td><td class="num change">+3</td>
+        </tr>
+        <tr>
+          <td>Experience</td><td class="num before-c">4/10</td><td class="arw">→</td><td class="num after-c">8/10</td><td class="num change">+4</td>
+        </tr>
+        <tr>
+          <td>Skills / Keywords</td><td class="num before-c">5/10</td><td class="arw">→</td><td class="num after-c">8/10</td><td class="num change">+3</td>
+        </tr>
+      </table>
+      <div class="overall-final">
+        <div class="lbl" style="font-family:var(--mono); color:var(--muted); font-size:12.5px;">OVERALL PROFILE STRENGTH</div>
+        <div class="num"><span class="before-c">44</span><span class="arrow">→</span><span class="after-c">82</span> <span style="color:var(--amber); font-size:15px;">(+38)</span></div>
+      </div>
+      <p style="font-size:12.5px; color:var(--muted); margin-top:12px;">The after-scores assume you fill in the bracketed numbers in Part 2 — without real metrics, cap the Experience and About scores about 1–2 points lower.</p>
+    </section>
+  </div>
+
+  <!-- PART 4: PLAN -->
+  <div class="panel" id="plan">
+    <section class="card" style="padding-bottom:8px;">
+      <h2 class="section-title">7-Day LinkedIn Activation Plan</h2>
+      <div class="section-sub">Tap a day to expand. This isn't just profile edits — it's the actions that make the rewrite pay off.</div>
+
+      <details class="day" open>
+        <summary class="day-head"><div class="dnum">DAY 1</div><div class="dtitle">Make all profile changes</div><div class="chev">›</div></summary>
+        <div class="day-body">
+          <div class="checklist">
+            <div>Replace headline with Option 1, 2 or 3 from Part 2</div>
+            <div>Replace About section with the rewrite — fill in the two bracketed proof lines first</div>
+            <div>Update the IT Infrastructure Operations Specialist bullets with the rewritten versions</div>
+            <div>Reorder skills: pin Cisco Meraki, Fortinet Firewall, VLAN Configuration to the top 3</div>
+            <div>Remove Salesforce and Jira from your skills list</div>
+            <div>Add the new skills list (CCNA, Routing & Switching, Network Security, TCP/IP, etc.)</div>
+            <div>Update your banner image if it still reflects an ITSM/help-desk visual identity</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="day">
+        <summary class="day-head"><div class="dnum">DAY 2</div><div class="dtitle">Publish Post #1 — "I just rebuilt my LinkedIn"</div><div class="chev">›</div></summary>
+        <div class="day-body">
+          <div class="post-draft">I just rewrote my entire LinkedIn profile — and it made me realize how much of it was written for a career I'm not in anymore.
+
+For years my profile said "ITSM Professional." True, but incomplete. For the last several months I've actually been doing hands-on Network Engineering — VLANs, switching, Cisco Meraki, Fortinet firewalls — at GLA University.
+
+My old headline buried "Networking" as word #6 out of 8. My About section had zero mention of the pivot. If I couldn't tell my own story clearly, why would a recruiter figure it out for me?
+
+So I rebuilt it: headline, About, experience bullets, skills — all realigned around the role I actually want next: Network Engineer.
+
+Lesson: your LinkedIn should describe where you're going, not just where you've been.
+
+If you're also sitting on a profile that still describes your old job — worth a rewrite before your next application, not after.</div>
+          <div class="char-count">≈ 980 characters — leaves room for you to add a line about your own pivot if you want to personalize it further.</div>
+        </div>
+      </details>
+
+      <details class="day">
+        <summary class="day-head"><div class="dnum">DAY 3</div><div class="dtitle">Send 10 strategic connection requests</div><div class="chev">›</div></summary>
+        <div class="day-body">
+          <p><strong>Who to target:</strong></p>
+          <ul class="target-list">
+            <li>Network Engineers / Network Administrators at companies you'd want to work for</li>
+            <li>Network Security Engineers (your longer-term direction) — see who they follow and worked with</li>
+            <li>Hiring managers or IT infrastructure leads with "Network" in their title, in your city/region or remote-friendly companies</li>
+            <li>Technical recruiters who post about networking or infrastructure roles</li>
+            <li>People at Cisco Meraki / Fortinet partner or reseller companies — they hire and refer network talent constantly</li>
+          </ul>
+          <div class="post-draft">Hi [Name] — I'm a Network Engineer working with Cisco Meraki and Fortinet infrastructure, coming from a 12-yr ITSM background. Would love to connect and follow your work in the networking space.</div>
+          <div class="char-count">≈ 210 characters</div>
+        </div>
+      </details>
+
+      <details class="day">
+        <summary class="day-head"><div class="dnum">DAY 4</div><div class="dtitle">Comment on 5 posts in your target space</div><div class="chev">›</div></summary>
+        <div class="day-body">
+          <p>Use the <strong>Value Comment</strong> formula on posts from Network/Infra people you just connected with or already follow:</p>
+          <div class="formula">Agree + Add Insight + Ask a Question</div>
+          <p><strong>Example:</strong> "Agree that firewall rule sprawl is the silent killer of network performance — we ran into this with Fortinet policies at scale and cleaning up unused rules alone cut troubleshooting time noticeably. Curious how you handle rule audits on a recurring basis — scheduled review or triggered by incidents?"</p>
+          <p style="color:var(--muted); font-size:12.5px;">This gets you visible to that poster's audience (often exactly your target hiring managers) without ever looking like you're job-hunting.</p>
+        </div>
+      </details>
+
+      <details class="day">
+        <summary class="day-head"><div class="dnum">DAY 5</div><div class="dtitle">Publish Post #2 — lessons-learned / hot take</div><div class="chev">›</div></summary>
+        <div class="day-body">
+          <div class="post-draft">Hot take: the most useful skill I brought into Network Engineering wasn't a networking skill at all — it was 12 years of Incident Management.
+
+Most network issues aren't hard because of the technology. They're hard because five people are messaging you at once, the business wants an ETA you don't have yet, and you're troubleshooting under pressure.
+
+ITSM taught me how to stay calm during an outage, communicate status without overpromising, and document the fix so it doesn't happen twice. Cisco Meraki and Fortinet taught me the "how." ITSM taught me the "how to handle it when it breaks at 9am on a Monday."
+
+If you're moving from a service/support background into a hands-on infrastructure role — don't undersell the incident-response muscle you already built. It's rarer than the technical skill, and it's exactly what keeps a network team calm during a real outage.</div>
+          <div class="char-count">≈ 990 characters</div>
+        </div>
+      </details>
+
+      <details class="day">
+        <summary class="day-head"><div class="dnum">DAY 6</div><div class="dtitle">Engage with every comment + 5 more connections</div><div class="chev">›</div></summary>
+        <div class="day-body">
+          <div class="checklist">
+            <div>Reply to every comment on both posts within a few hours — momentum matters more than perfection</div>
+            <div>Send 5 more connection requests using the Day 3 targeting list and template</div>
+            <div>Revisit 2–3 posts you commented on Day 4 and see if the conversation continued</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="day">
+        <summary class="day-head"><div class="dnum">DAY 7</div><div class="dtitle">Review profile views & connection acceptance rate</div><div class="chev">›</div></summary>
+        <div class="day-body">
+          <p><strong>What the numbers mean:</strong></p>
+          <ul class="target-list">
+            <li><strong>Profile views spike</strong> after posting or commenting — that's the algorithm surfacing you, and it confirms the headline/photo are doing their job of making people click through.</li>
+            <li><strong>Low connection-acceptance rate (under ~40%)</strong> usually means your targeting is off, not your message — you may be reaching too senior or too unrelated a group.</li>
+            <li><strong>High profile views but no messages</strong> often means the About section still isn't closing — that's a sign to revisit the hook and CTA lines.</li>
+          </ul>
+          <p style="font-size:12.5px; color:var(--muted);">Adjust: if views are up but connections are flat, tighten your Day 3 targeting list. If connections are up but engagement is quiet, your posting cadence (Day 2 & 5) needs to continue weekly, not just this one week.</p>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  <!-- PART 5: SUMMARY CARD -->
+  <div class="panel" id="summary">
+    <section class="card">
+      <h2 class="section-title">What I Learned Today</h2>
+      <div class="section-sub">Screenshot-ready — post this as-is.</div>
+
+      <div class="summary-card" id="shareCard">
+        <div class="sc-top">I LET AI ROAST MY LINKEDIN PROFILE TODAY</div>
+        <h3>Here's what changed:</h3>
+        <div class="sc-scores">
+          <div class="before-c"><div class="n">44</div><div class="l">Before</div></div>
+          <div class="after-c"><div class="n">82</div><div class="l">After</div></div>
+        </div>
+        <div class="sc-mistakes">
+          <strong style="font-size:13px;">Top 3 mistakes I was making:</strong>
+          <ol>
+            <li>My headline listed 8 keywords with "Networking" buried 6th — nothing signaled my actual target role.</li>
+            <li>My About section opened with a credential, not a hook, and had zero numbers or achievements.</li>
+            <li>My experience bullets described responsibilities, not results — no proof of impact anywhere.</li>
+          </ol>
+        </div>
+        <div class="sc-winner">
+          <span class="l">The #1 thing that made the biggest difference</span>
+          Rewriting the headline and About section to lead with "Network Engineer" instead of my old ITSM identity — the profile now matches the job I actually want next, not the one I'm leaving.
+        </div>
+      </div>
+      <div class="copy-note">Select the text above and copy it manually to post as-is.</div>
+    </section>
+  </div>
+
+</div>
+</body>
+</html>
