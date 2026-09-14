@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defend Your Experience</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0D10;
+    --panel:#14171B;
+    --panel-2:#1B1F24;
+    --line:#272C32;
+    --ink:#E9E7E1;
+    --ink-dim:#9CA1A8;
+    --ink-faint:#5F656C;
+    --accent:#6E8CFF;
+    --accent-dim:#3D4A7A;
+    --weak:#D9634A;
+    --weak-bg:#241814;
+    --strong:#4FA97C;
+    --strong-bg:#132119;
+    --mid:#D9A84A;
+    --mid-bg:#241D12;
+    --radius:3px;
+    --serif: 'Fraunces', serif;
+    --sans: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  ::selection{background:var(--accent-dim); color:#fff;}
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:6px;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+
+  /* ---------- App shell ---------- */
+  #app{ min-height:100vh; display:flex; flex-direction:column; }
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(20,23,27,0.9), rgba(11,13,16,0.4));
+    position:sticky; top:0; z-index:40; backdrop-filter:blur(8px);
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand-mark{
+    font-family:var(--serif); font-size:19px; font-weight:600; letter-spacing:0.2px;
+  }
+  .brand-mark .dot{ color:var(--accent); }
+  .brand-sub{ font-size:12px; color:var(--ink-faint); font-family:var(--mono); }
+  .topbar-actions{ display:flex; gap:10px; align-items:center; }
+
+  .btn{
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--ink);
+    padding:8px 14px;
+    border-radius:var(--radius);
+    font-size:13px;
+    cursor:pointer;
+    transition:border-color 0.15s ease, background 0.15s ease;
+  }
+  .btn:hover{ border-color:var(--accent-dim); background:#1E232A; }
+  .btn:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px;
+  }
+  .btn-primary{
+    background:var(--accent); border-color:var(--accent); color:#0B0D10; font-weight:600;
+  }
+  .btn-primary:hover{ background:#8199FF; border-color:#8199FF; }
+  .btn-primary:disabled{ opacity:0.45; cursor:not-allowed; }
+  .btn-ghost{ background:transparent; border-color:transparent; color:var(--ink-dim); }
+  .btn-ghost:hover{ color:var(--ink); background:var(--panel-2); }
+  .btn-sm{ padding:5px 10px; font-size:12px; }
+
+  .main{ flex:1; display:flex; min-height:0; }
+
+  /* ---------- Empty / onboarding state ---------- */
+  .onboard{
+    max-width:760px; margin:0 auto; padding:64px 24px 100px;
+    width:100%;
+  }
+  .onboard h1{
+    font-family:var(--serif); font-weight:500; font-size:clamp(30px,4vw,42px);
+    line-height:1.15; margin:0 0 14px; letter-spacing:-0.01px;
+  }
+  .onboard h1 em{ font-style:italic; color:var(--accent); }
+  .onboard p.lede{
+    color:var(--ink-dim); font-size:15.5px; max-width:52ch; margin:0 0 40px;
+  }
+
+  .dropzone{
+    border:1px dashed var(--line);
+    border-radius:var(--radius);
+    padding:44px 28px;
+    text-align:center;
+    background:var(--panel);
+    transition:border-color 0.15s ease, background 0.15s ease;
+    cursor:pointer;
+  }
+  .dropzone.dragover{ border-color:var(--accent); background:#12151C; }
+  .dropzone .dz-icon{ font-size:26px; margin-bottom:10px; opacity:0.6; }
+  .dropzone .dz-title{ font-size:14.5px; font-weight:500; margin-bottom:4px; }
+  .dropzone .dz-sub{ font-size:12.5px; color:var(--ink-faint); }
+  .dropzone input[type=file]{ display:none; }
+
+  .or-row{ display:flex; align-items:center; gap:12px; margin:22px 0; color:var(--ink-faint); font-size:12px; }
+  .or-row::before, .or-row::after{ content:''; flex:1; height:1px; background:var(--line); }
+
+  textarea.paste-box{
+    width:100%; min-height:130px; background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); color:var(--ink); padding:14px; font-size:13.5px; resize:vertical;
+    font-family:var(--sans);
+  }
+  textarea.paste-box:focus-visible{ border-color:var(--accent); }
+
+  .onboard-footer-actions{ display:flex; justify-content:flex-end; margin-top:14px; gap:10px; }
+
+  .file-chip{
+    display:inline-flex; align-items:center; gap:8px; background:var(--panel-2);
+    border:1px solid var(--line); border-radius:var(--radius); padding:7px 12px; font-size:13px; margin-top:14px;
+  }
+  .file-chip .x{ cursor:pointer; color:var(--ink-faint); }
+  .file-chip .x:hover{ color:var(--weak); }
+
+  .session-history{ margin-top:56px; }
+  .session-history h3{
+    font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);
+    font-weight:500; margin:0 0 12px;
+  }
+  .session-item{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 14px; border:1px solid var(--line); border-radius:var(--radius);
+    margin-bottom:8px; background:var(--panel); cursor:pointer;
+  }
+  .session-item:hover{ border-color:var(--accent-dim); }
+  .session-item .si-name{ font-size:13.5px; }
+  .session-item .si-meta{ font-size:11.5px; color:var(--ink-faint); font-family:var(--mono); }
+
+  /* ---------- Style picker (first run) ---------- */
+  .style-pick{
+    display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:20px 0 8px;
+  }
+  .style-card{
+    border:1px solid var(--line); border-radius:var(--radius); padding:16px;
+    cursor:pointer; background:var(--panel);
+  }
+  .style-card:hover{ border-color:var(--accent-dim); }
+  .style-card.selected{ border-color:var(--accent); background:#12151C; }
+  .style-card .sc-title{ font-size:13.5px; font-weight:600; margin-bottom:4px; }
+  .style-card .sc-sub{ font-size:12px; color:var(--ink-faint); }
+
+  /* ---------- Interview layout ---------- */
+  .interview-shell{ display:flex; width:100%; min-height:0; flex:1; }
+
+  .sidebar{
+    width:280px; flex-shrink:0; border-right:1px solid var(--line);
+    padding:22px 18px; display:flex; flex-direction:column; gap:22px;
+    position:sticky; top:57px; align-self:flex-start; height:calc(100vh - 57px);
+    overflow-y:auto;
+  }
+  .sidebar-section h4{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);
+    font-weight:500; margin:0 0 10px;
+  }
+
+  .confidence-ring-wrap{ display:flex; align-items:center; gap:14px; }
+  .confidence-num{ font-family:var(--serif); font-size:30px; font-weight:500; }
+  .confidence-label{ font-size:11.5px; color:var(--ink-faint); }
+
+  .claim-list{ display:flex; flex-direction:column; gap:6px; max-height:340px; overflow-y:auto; }
+  .claim-item{
+    display:flex; gap:8px; align-items:flex-start; padding:8px 9px; border-radius:var(--radius);
+    font-size:12.5px; border:1px solid transparent; cursor:default;
+  }
+  .claim-item.active{ background:var(--panel-2); border-color:var(--line); }
+  .claim-dot{ width:7px; height:7px; border-radius:50%; margin-top:5px; flex-shrink:0; }
+  .claim-dot.pending{ background:var(--ink-faint); }
+  .claim-dot.strong{ background:var(--strong); }
+  .claim-dot.mid{ background:var(--mid); }
+  .claim-dot.weak{ background:var(--weak); }
+  .claim-text{ color:var(--ink-dim); }
+
+  .progress-bar-track{ width:100%; height:4px; background:var(--panel-2); border-radius:4px; overflow:hidden; }
+  .progress-bar-fill{ height:100%; background:var(--accent); transition:width 0.4s ease; }
+
+  .sidebar-stat-row{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:6px; }
+  .sidebar-stat-row .v{ font-family:var(--mono); color:var(--ink-dim); }
+
+  .transcript-col{
+    flex:1; min-width:0; display:flex; flex-direction:column;
+    max-height:calc(100vh - 57px); overflow:hidden;
+  }
+  .transcript-scroll{
+    flex:1; overflow-y:auto; padding:32px 40px 16px;
+  }
+  .transcript-inner{ max-width:700px; margin:0 auto; }
+
+  .exchange{ display:flex; gap:16px; margin-bottom:30px; }
+  .exchange-idx{
+    font-family:var(--mono); font-size:11px; color:var(--ink-faint); width:26px; flex-shrink:0;
+    padding-top:3px; text-align:right;
+  }
+  .exchange-body{ flex:1; min-width:0; }
+
+  .q-block{ margin-bottom:14px; }
+  .q-label{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent);
+    font-weight:600; margin-bottom:5px;
+  }
+  .q-text{ font-family:var(--serif); font-size:17px; line-height:1.45; color:var(--ink); }
+  .q-flag{
+    display:inline-block; margin-top:8px; font-size:11.5px; padding:3px 8px; border-radius:20px;
+    font-family:var(--mono);
+  }
+  .q-flag.weak{ background:var(--weak-bg); color:var(--weak); }
+  .q-flag.mid{ background:var(--mid-bg); color:var(--mid); }
+  .q-flag.strong{ background:var(--strong-bg); color:var(--strong); }
+
+  .a-block textarea{
+    width:100%; min-height:90px; background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); color:var(--ink); padding:12px 13px; font-size:14px;
+    resize:vertical; font-family:var(--sans); line-height:1.5;
+  }
+  .a-block textarea:focus-visible{ border-color:var(--accent); }
+  .a-block .given{
+    font-size:14.5px; color:var(--ink-dim); padding:12px 13px; background:var(--panel);
+    border-left:2px solid var(--accent-dim); border-radius:0 var(--radius) var(--radius) 0;
+    white-space:pre-wrap;
+  }
+  .a-actions{ display:flex; justify-content:space-between; align-items:center; margin-top:10px; }
+  .a-hint{ font-size:11.5px; color:var(--ink-faint); }
+
+  .assess-note{
+    margin-top:12px; font-size:13px; color:var(--ink-dim); background:var(--panel);
+    border:1px solid var(--line); border-radius:var(--radius); padding:11px 13px;
+  }
+  .assess-note b{ color:var(--ink); font-weight:600; }
+
+  .typing-dots{ display:flex; gap:4px; padding:8px 0; }
+  .typing-dots span{
+    width:6px; height:6px; border-radius:50%; background:var(--ink-faint);
+    animation:blink 1.2s infinite ease-in-out;
+  }
+  .typing-dots span:nth-child(2){ animation-delay:0.2s; }
+  .typing-dots span:nth-child(3){ animation-delay:0.4s; }
+  @keyframes blink{ 0%,80%,100%{ opacity:0.25; } 40%{ opacity:1; } }
+
+  .composer{
+    border-top:1px solid var(--line); padding:16px 40px 20px; background:var(--bg);
+  }
+  .composer-inner{ max-width:700px; margin:0 auto; }
+
+  .error-banner{
+    background:var(--weak-bg); border:1px solid #4A2A22; color:#F0A691; font-size:13px;
+    padding:10px 13px; border-radius:var(--radius); margin-bottom:14px; display:flex;
+    justify-content:space-between; align-items:center; gap:10px;
+  }
+
+  /* ---------- Report ---------- */
+  .report-wrap{ max-width:820px; margin:0 auto; padding:48px 28px 100px; }
+  .report-header{ margin-bottom:36px; }
+  .report-header h1{ font-family:var(--serif); font-size:32px; font-weight:500; margin:0 0 8px; }
+  .report-header p{ color:var(--ink-dim); font-size:14px; margin:0; }
+
+  .report-score-row{ display:flex; gap:16px; margin-bottom:40px; flex-wrap:wrap; }
+  .score-card{
+    flex:1; min-width:150px; background:var(--panel); border:1px solid var(--line);
+    border-radius:var(--radius); padding:18px 18px;
+  }
+  .score-card .sc-num{ font-family:var(--serif); font-size:30px; }
+  .score-card .sc-label{ font-size:11.5px; color:var(--ink-faint); margin-top:4px; }
+
+  .report-section{ margin-bottom:38px; }
+  .report-section h2{
+    font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint);
+    font-weight:600; margin:0 0 16px; padding-bottom:10px; border-bottom:1px solid var(--line);
+  }
+  .report-claim{
+    display:flex; gap:14px; padding:16px 0; border-bottom:1px solid var(--line);
+  }
+  .report-claim:last-child{ border-bottom:none; }
+  .rc-status{ width:10px; height:10px; border-radius:50%; margin-top:6px; flex-shrink:0; }
+  .rc-body{ flex:1; }
+  .rc-claim-text{ font-size:14.5px; margin-bottom:6px; }
+  .rc-note{ font-size:13px; color:var(--ink-dim); }
+  .rc-note b{ color:var(--ink); }
+
+  .report-actions{ display:flex; gap:10px; margin-top:40px; flex-wrap:wrap; }
+
+  .hidden{ display:none !important; }
+
+  @media (max-width: 860px){
+    .sidebar{ display:none; }
+    .transcript-scroll{ padding:22px 16px 10px; }
+    .composer{ padding:14px 16px 16px; }
+    .topbar{ padding:12px 16px; }
+    .onboard{ padding:36px 16px 80px; }
+    .style-pick{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark">Defend<span class="dot">·</span>Experience</div>
+      <div class="brand-sub" id="sessionLabel"></div>
+    </div>
+    <div class="topbar-actions" id="topbarActions"></div>
+  </div>
+
+  <div class="main" id="mainArea"></div>
+
+</div>
+
+<script>
+(function(){
+
+/* =========================================================
+   STATE
+========================================================= */
+const State = {
+  screen: 'onboard', // onboard -> style -> interview -> report
+  style: null,
+  sourceText: '',
+  sourceName: '',
+  claims: [],          // {id, text, status: pending|strong|mid|weak, notes}
+  exchanges: [],        // {question, flag, answer, assessment, claimRef}
+  turnCount: 0,
+  maxTurns: 12,
+  loading: false,
+  errorMsg: '',
+  sessions: [],
+  currentSessionId: null,
+};
+
+const LS_KEY = 'dye_sessions_v1';
+
+function loadSessions(){
+  try{ State.sessions = JSON.parse(localStorage.getItem(LS_KEY) || '[]'); }
+  catch(e){ State.sessions = []; }
+}
+function persistSession(){
+  if(!State.currentSessionId) State.currentSessionId = 'sess_' + Date.now();
+  const idx = State.sessions.findIndex(s=>s.id===State.currentSessionId);
+  const snap = {
+    id: State.currentSessionId,
+    name: State.sourceName || 'Untitled experience',
+    updatedAt: Date.now(),
+    style: State.style,
+    sourceText: State.sourceText,
+    sourceName: State.sourceName,
+    claims: State.claims,
+    exchanges: State.exchanges,
+    turnCount: State.turnCount,
+  };
+  if(idx>=0) State.sessions[idx] = snap; else State.sessions.unshift(snap);
+  localStorage.setItem(LS_KEY, JSON.stringify(State.sessions));
+}
+function loadPreferredStyle(){
+  try{ return localStorage.getItem('dye_style_pref'); }catch(e){ return null; }
+}
+function savePreferredStyle(s){
+  try{ localStorage.setItem('dye_style_pref', s); }catch(e){}
+}
+
+/* =========================================================
+   CLAUDE API
+========================================================= */
+async function callClaude(systemPrompt, messages, retries){
+  retries = retries===undefined ? 2 : retries;
+  try{
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: messages
+      })
+    });
+    if(resp.status===429 && retries>0){
+      await new Promise(r=>setTimeout(r, 1200));
+      return callClaude(systemPrompt, messages, retries-1);
+    }
+    if(!resp.ok){
+      throw new Error('API error: ' + resp.status);
+    }
+    const data = await resp.json();
+    const textBlocks = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text);
+    return textBlocks.join('\n').trim();
+  }catch(err){
+    if(retries>0){
+      await new Promise(r=>setTimeout(r, 1000));
+      return callClaude(systemPrompt, messages, retries-1);
+    }
+    throw err;
+  }
+}
+
+function extractJSON(text){
+  let t = text.replace(/```json/gi,'').replace(/```/g,'').trim();
+  const start = t.indexOf('{');
+  const arrStart = t.indexOf('[');
+  let s = start;
+  if(arrStart!==-1 && (arrStart<start || start===-1)) s = arrStart;
+  if(s>0) t = t.slice(s);
+  const lastBrace = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+  if(lastBrace!==-1) t = t.slice(0, lastBrace+1);
+  return JSON.parse(t);
+}
+
+/* =========================================================
+   RENDER ROOT
+========================================================= */
+function render(){
+  const main = document.getElementById('mainArea');
+  const topbarActions = document.getElementById('topbarActions');
+  const sessionLabel = document.getElementById('sessionLabel');
+  sessionLabel.textContent = State.sourceName ? ('— ' + State.sourceName) : '';
+
+  if(State.screen==='onboard'){
+    topbarActions.innerHTML = '';
+    renderOnboard(main);
+  } else if(State.screen==='style'){
+    topbarActions.innerHTML = '';
+    renderStylePick(main);
+  } else if(State.screen==='interview'){
+    renderTopbarInterview(topbarActions);
+    renderInterview(main);
+  } else if(State.screen==='report'){
+    renderTopbarReport(topbarActions);
+    renderReport(main);
+  }
+}
+
+/* =========================================================
+   ONBOARD SCREEN
+========================================================= */
+function renderOnboard(main){
+  loadSessions();
+  main.innerHTML = `
+    <div class="onboard">
+      <h1>Before the panel asks,<br><em>ask yourself first.</em></h1>
+      <p class="lede">Upload your resume, LinkedIn export, project writeup, or performance review. Every claim in it becomes a question you'll need to answer — specifically, with evidence, under follow-up.</p>
+
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload a document">
+        <div class="dz-icon">&#8942;&#8942;</div>
+        <div class="dz-title">Drop a file here, or click to browse</div>
+        <div class="dz-sub">.txt, .md — or paste text below</div>
+        <input type="file" id="fileInput" accept=".txt,.md,.text">
+      </div>
+      <div id="fileChipHolder"></div>
+
+      <div class="or-row">or paste it directly</div>
+      <textarea class="paste-box" id="pasteBox" placeholder="Paste your resume, bullet points, project summary, or bio here..."></textarea>
+
+      <div class="onboard-footer-actions">
+        <button class="btn btn-primary" id="beginBtn" disabled>Begin the defense &rarr;</button>
+      </div>
+
+      <div class="session-history" id="historyWrap"></div>
+    </div>
+  `;
+
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const pasteBox = document.getElementById('pasteBox');
+  const beginBtn = document.getElementById('beginBtn');
+  const fileChipHolder = document.getElementById('fileChipHolder');
+
+  let pendingFileName = '';
+
+  function checkReady(){
+    const ready = (pasteBox.value.trim().length > 30);
+    beginBtn.disabled = !ready;
+  }
+
+  dropzone.addEventListener('click', ()=>fileInput.click());
+  dropzone.addEventListener('keypress', (e)=>{ if(e.key==='Enter') fileInput.click(); });
+  dropzone.addEventListener('dragover', (e)=>{ e.preventDefault(); dropzone.classList.add('dragover'); });
+  dropzone.addEventListener('dragleave', ()=> dropzone.classList.remove('dragover'));
+  dropzone.addEventListener('drop', (e)=>{
+    e.preventDefault(); dropzone.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if(f) handleFile(f);
+  });
+  fileInput.addEventListener('change', (e)=>{
+    const f = e.target.files[0];
+    if(f) handleFile(f);
+  });
+
+  function handleFile(f){
+    pendingFileName = f.name;
+    const reader = new FileReader();
+    reader.onload = (ev)=>{
+      pasteBox.value = ev.target.result;
+      fileChipHolder.innerHTML = `<div class="file-chip">${escapeHtml(f.name)} <span class="x" id="clearFile">&times;</span></div>`;
+      document.getElementById('clearFile').onclick = ()=>{
+        fileChipHolder.innerHTML=''; pasteBox.value=''; pendingFileName=''; checkReady();
+      };
+      checkReady();
+    };
+    reader.readAsText(f);
+  }
+
+  pasteBox.addEventListener('input', checkReady);
+
+  beginBtn.addEventListener('click', ()=>{
+    State.sourceText = pasteBox.value.trim();
+    State.sourceName = pendingFileName || 'Pasted experience';
+    const preferred = loadPreferredStyle();
+    if(preferred){
+      State.style = preferred;
+      State.screen = 'interview';
+      startInterview();
+    } else {
+      State.screen = 'style';
+      render();
+    }
+  });
+
+  const historyWrap = document.getElementById('historyWrap');
+  if(State.sessions.length){
+    historyWrap.innerHTML = `<h3>Continue a previous session</h3>` + State.sessions.slice(0,6).map(s=>`
+      <div class="session-item" data-id="${s.id}">
+        <div>
+          <div class="si-name">${escapeHtml(s.name)}</div>
+          <div class="si-meta">${s.exchanges.length} exchange${s.exchanges.length===1?'':'s'} &middot; ${timeAgo(s.updatedAt)}</div>
+        </div>
+        <span style="color:var(--ink-faint); font-size:16px;">&rarr;</span>
+      </div>
+    `).join('');
+    historyWrap.querySelectorAll('.session-item').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const s = State.sessions.find(x=>x.id===el.dataset.id);
+        if(!s) return;
+        Object.assign(State, {
+          style: s.style, sourceText: s.sourceText, sourceName: s.sourceName,
+          claims: s.claims, exchanges: s.exchanges, turnCount: s.turnCount,
+          currentSessionId: s.id, screen: (s.exchanges.length>0 && s.turnCount>=State.maxTurns) ? 'report' : 'interview'
+        });
+        render();
+        if(State.screen==='interview') scrollToBottomSoon();
+      });
+    });
+  }
+
+  checkReady();
+}
+
+function timeAgo(ts){
+  const diff = Date.now()-ts;
+  const mins = Math.floor(diff/60000);
+  if(mins<1) return 'just now';
+  if(mins<60) return mins+'m ago';
+  const hrs = Math.floor(mins/60);
+  if(hrs<24) return hrs+'h ago';
+  return Math.floor(hrs/24)+'d ago';
+}
+
+/* =========================================================
+   STYLE PICK SCREEN (fallback if no memory pref — user already
+   told us dark mode in the chat interview, so we pre-select it)
+========================================================= */
+const STYLE_DEFS = {
+  dark: { title:'Sleek dark mode', sub:'Modern, techy, high contrast' },
+  light: { title:'Clean minimal light', sub:'Editorial, calm, generous whitespace' },
+  bold: { title:'Bold & energetic', sub:'Vibrant accents, dynamic' },
+  corporate: { title:'Professional corporate', sub:'Understated, trustworthy' },
+};
+
+function renderStylePick(main){
+  main.innerHTML = `
+    <div class="onboard">
+      <h1>One more thing — <em>how should this feel?</em></h1>
+      <p class="lede">This shapes the whole interface. You already told us dark mode; confirm or switch below.</p>
+      <div class="style-pick" id="stylePick">
+        ${Object.entries(STYLE_DEFS).map(([k,v])=>`
+          <div class="style-card ${k==='dark'?'selected':''}" data-key="${k}">
+            <div class="sc-title">${v.title}</div>
+            <div class="sc-sub">${v.sub}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="onboard-footer-actions">
+        <button class="btn btn-primary" id="confirmStyle">Continue &rarr;</button>
+      </div>
+    </div>
+  `;
+  let chosen = 'dark';
+  const cards = main.querySelectorAll('.style-card');
+  cards.forEach(c=>{
+    c.addEventListener('click', ()=>{
+      cards.forEach(x=>x.classList.remove('selected'));
+      c.classList.add('selected');
+      chosen = c.dataset.key;
+    });
+  });
+  document.getElementById('confirmStyle').addEventListener('click', ()=>{
+    State.style = chosen;
+    savePreferredStyle(chosen);
+    State.screen = 'interview';
+    render();
+    startInterview();
+  });
+}
+
+/* =========================================================
+   INTERVIEW SCREEN
+========================================================= */
+function renderTopbarInterview(el){
+  el.innerHTML = `
+    <button class="btn btn-ghost btn-sm" id="exitBtn">Save &amp; exit</button>
+    ${State.turnCount>=State.maxTurns ? `<button class="btn btn-primary btn-sm" id="viewReportBtn">View Defense Report</button>` : ''}
+  `;
+  const exitBtn = document.getElementById('exitBtn');
+  if(exitBtn) exitBtn.addEventListener('click', ()=>{ persistSession(); State.screen='onboard'; render(); });
+  const rb = document.getElementById('viewReportBtn');
+  if(rb) rb.addEventListener('click', ()=>{ State.screen='report'; persistSession(); render(); });
+}
+
+function statusColor(status){
+  return status==='strong' ? 'strong' : status==='mid' ? 'mid' : status==='weak' ? 'weak' : 'pending';
+}
+
+function renderInterview(main){
+  main.innerHTML = `
+    <div class="interview-shell">
+      <div class="sidebar">
+        <div class="sidebar-section">
+          <h4>Overall confidence</h4>
+          <div class="confidence-ring-wrap">
+            <div class="confidence-num" id="confNum">—</div>
+            <div class="confidence-label">based on ${State.exchanges.filter(e=>e.assessment).length} assessed answer${State.exchanges.length===1?'':'s'}</div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <h4>Session progress</h4>
+          <div class="progress-bar-track"><div class="progress-bar-fill" id="progFill" style="width:0%"></div></div>
+          <div style="font-size:11.5px; color:var(--ink-faint); margin-top:6px;" id="progText"></div>
+        </div>
+        <div class="sidebar-section">
+          <h4>Claims under review</h4>
+          <div class="claim-list" id="claimList"></div>
+        </div>
+      </div>
+      <div class="transcript-col">
+        <div class="transcript-scroll" id="transcriptScroll">
+          <div class="transcript-inner" id="transcriptInner"></div>
+        </div>
+        <div class="composer" id="composerWrap"></div>
+      </div>
+    </div>
+  `;
+  updateSidebar();
+  renderTranscript();
+}
+
+function updateSidebar(){
+  const assessed = State.exchanges.filter(e=>e.assessment && typeof e.assessment.score==='number');
+  const avg = assessed.length ? Math.round(assessed.reduce((a,e)=>a+e.assessment.score,0)/assessed.length) : null;
+  const confNum = document.getElementById('confNum');
+  if(confNum) confNum.textContent = avg===null ? '—' : avg + '%';
+
+  const progFill = document.getElementById('progFill');
+  const progText = document.getElementById('progText');
+  const pct = Math.min(100, Math.round((State.turnCount/State.maxTurns)*100));
+  if(progFill) progFill.style.width = pct + '%';
+  if(progText) progText.textContent = `Question ${Math.min(State.turnCount+1, State.maxTurns)} of ${State.maxTurns}`;
+
+  const claimList = document.getElementById('claimList');
+  if(claimList){
+    claimList.innerHTML = State.claims.map(c=>`
+      <div class="claim-item ${c.active?'active':''}">
+        <div class="claim-dot ${statusColor(c.status)}"></div>
+        <div class="claim-text">${escapeHtml(c.text)}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function renderTranscript(){
+  const inner = document.getElementById('transcriptInner');
+  if(!inner) return;
+  inner.innerHTML = State.exchanges.map((ex, i)=>`
+    <div class="exchange">
+      <div class="exchange-idx">${String(i+1).padStart(2,'0')}</div>
+      <div class="exchange-body">
+        <div class="q-block">
+          <div class="q-label">${ex.claimRef ? 'Challenging' : 'Question'}</div>
+          <div class="q-text">${escapeHtml(ex.question)}</div>
+          ${ex.flag ? `<div class="q-flag ${ex.flag}">${flagLabel(ex.flag)}</div>` : ''}
+        </div>
+        ${ex.answer !== undefined ? `
+          <div class="a-block"><div class="given">${escapeHtml(ex.answer)}</div></div>
+          ${ex.assessment ? `<div class="assess-note"><b>${ex.assessment.verdict}</b> — ${escapeHtml(ex.assessment.note)}</div>` : ''}
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+  renderComposer();
+}
+
+function flagLabel(flag){
+  if(flag==='weak') return 'Vague claim — needs specifics';
+  if(flag==='mid') return 'Partially supported';
+  if(flag==='strong') return 'Well-evidenced so far';
+  return '';
+}
+
+function renderComposer(){
+  const wrap = document.getElementById('composerWrap');
+  if(!wrap) return;
+
+  if(State.turnCount >= State.maxTurns){
+    wrap.innerHTML = `
+      <div class="composer-inner">
+        <div style="text-align:center; padding:8px 0;">
+          <div style="font-family:var(--serif); font-size:16px; margin-bottom:10px;">That's a full session — you've defended ${State.claims.length} claim${State.claims.length===1?'':'s'}.</div>
+          <button class="btn btn-primary" id="goReportBtn">See your Defense Report &rarr;</button>
+        </div>
+      </div>
+    `;
+    document.getElementById('goReportBtn').addEventListener('click', ()=>{
+      State.screen='report'; persistSession(); render();
+    });
+    return;
+  }
+
+  const lastEx = State.exchanges[State.exchanges.length-1];
+  const needsAnswer = lastEx && lastEx.answer===undefined;
+
+  let inner = '';
+  if(State.errorMsg){
+    inner += `<div class="error-banner"><span>${escapeHtml(State.errorMsg)}</span><button class="btn btn-sm" id="retryBtn">Retry</button></div>`;
+  }
+
+  if(State.loading){
+    inner += `<div class="typing-dots"><span></span><span></span><span></span></div>`;
+  } else if(needsAnswer){
+    inner += `
+      <textarea id="answerBox" placeholder="Answer honestly and specifically — vague answers will be challenged again..." autofocus></textarea>
+      <div class="a-actions">
+        <div class="a-hint">Be specific: numbers, names, outcomes, your exact role.</div>
+        <button class="btn btn-primary" id="submitAnswer">Submit &rarr;</button>
+      </div>
+    `;
+  }
+
+  wrap.innerHTML = `<div class="composer-inner">${inner}</div>`;
+
+  const retryBtn = document.getElementById('retryBtn');
+  if(retryBtn) retryBtn.addEventListener('click', ()=>{ State.errorMsg=''; advanceInterview(); });
+
+  const submitBtn = document.getElementById('submitAnswer');
+  const answerBox = document.getElementById('answerBox');
+  if(submitBtn && answerBox){
+    const submit = ()=>{
+      const val = answerBox.value.trim();
+      if(!val) return;
+      lastEx.answer = val;
+      State.turnCount++;
+      renderTranscript();
+      updateSidebar();
+      persistSession();
+      assessAndContinue();
+    };
+    submitBtn.addEventListener('click', submit);
+    answerBox.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter' && (e.metaKey || e.ctrlKey)) submit();
+    });
+    setTimeout(()=>answerBox.focus(), 30);
+  }
+
+  scrollToBottomSoon();
+}
+
+function scrollToBottomSoon(){
+  setTimeout(()=>{
+    const sc = document.getElementById('transcriptScroll');
+    if(sc) sc.scrollTop = sc.scrollHeight;
+  }, 20);
+}
+
+/* ---- Kick off interview: extract claims, ask first question ---- */
+async function startInterview(){
+  render();
+  State.loading = true;
+  State.errorMsg = '';
+  renderInterview(document.getElementById('mainArea'));
+  renderComposer();
+
+  const sys = `You are an expert, skeptical panel interviewer preparing a candidate to defend their own resume/experience. You will be given a raw document (resume, bio, project writeup, etc). 
+Task 1: Extract 5-9 distinct, meaningful, checkable CLAIMS from the document (achievements, responsibilities, skills, metrics, outcomes) — skip boilerplate.
+Task 2: Pick the single weakest or vaguest claim to start with (most likely to be a stretched or unverified claim), and write ONE sharp, specific, panel-style opening question that challenges that exact claim by name/detail from the document. Do not ask generic "tell me about yourself" questions — reference specifics from the document.
+Respond ONLY with JSON, no preamble, no markdown fences, in this exact shape:
+{"claims": [{"id":"c1","text":"short paraphrase of the claim"}, ...], "firstQuestion": "the question text", "targetClaimId": "c1", "flag": "weak|mid|strong"}`;
+
+  try{
+    const raw = await callClaude(sys, [{role:'user', content: `AUDIENCE: panel interview.\n\nDOCUMENT:\n${State.sourceText}`}]);
+    const parsed = extractJSON(raw);
+    State.claims = parsed.claims.map(c=>({...c, status:'pending', active:false}));
+    const target = State.claims.find(c=>c.id===parsed.targetClaimId);
+    if(target) target.active = true;
+    State.exchanges = [{ question: parsed.firstQuestion, flag: parsed.flag || 'weak', claimRef: parsed.targetClaimId }];
+  }catch(err){
+    State.errorMsg = 'Could not reach the interviewer model. Check connection and retry.';
+    State.exchanges = [];
+  }
+  State.loading = false;
+  persistSession();
+  render();
+}
+
+/* ---- After user answers: assess + generate next question ---- */
+async function assessAndContinue(){
+  State.loading = true;
+  State.errorMsg = '';
+  renderComposer();
+
+  const history = State.exchanges.map((e,i)=>`Q${i+1}: ${e.question}\nA${i+1}: ${e.answer!==undefined ? e.answer : '(pending)'}`).join('\n\n');
+  const claimsList = State.claims.map(c=>`${c.id}: ${c.text} [status:${c.status}]`).join('\n');
+  const lastEx = State.exchanges[State.exchanges.length-1];
+  const isLast = State.turnCount >= State.maxTurns;
+
+  const sys = `You are a skeptical, expert panel interviewer running an adaptive mock-interview to help a candidate defend their resume claims. 
+You have the original document, the list of extracted claims with current status, and the full Q&A transcript so far.
+
+Your job now:
+1. Assess the candidate's most recent answer (to claim ${lastEx.claimRef || 'n/a'}). Judge for: specificity (numbers/names/outcomes), ownership (their exact role vs team), and evidence. Give a verdict word (e.g. "Solid", "Still vague", "Good specificity", "Unverified") and one concise coaching note (max 2 sentences) on how to strengthen it.
+2. Update that claim's status to one of: strong, mid, weak.
+3. Decide the NEXT question. It should go deeper on a weak spot if the last answer was thin (drill down, ask for a specific number/example/outcome they didn't give), OR move to a new unexamined claim if the last one is now well-defended. Reference specifics from their own document and their own prior answers — never generic templates. Make it feel like a real panel follow-up.
+${isLast ? 'This is the FINAL exchange of the session — after assessing, do not propose a next question; instead set "nextQuestion" to null.' : ''}
+
+Respond ONLY with JSON, no markdown fences:
+{"assessment": {"verdict":"...", "note":"...", "score": <0-100 integer>}, "updatedClaimId":"${lastEx.claimRef||''}", "updatedStatus":"strong|mid|weak", "nextQuestion": "text or null", "nextTargetClaimId": "cX or null", "nextFlag": "weak|mid|strong or null"}`;
+
+  const userMsg = `DOCUMENT:\n${State.sourceText}\n\nCLAIMS:\n${claimsList}\n\nTRANSCRIPT SO FAR:\n${history}`;
+
+  try{
+    const raw = await callClaude(sys, [{role:'user', content: userMsg}]);
+    const parsed = extractJSON(raw);
+    lastEx.assessment = parsed.assessment;
+
+    const claim = State.claims.find(c=>c.id===parsed.updatedClaimId);
+    if(claim) claim.status = parsed.updatedStatus || claim.status;
+    State.claims.forEach(c=>c.active=false);
+
+    if(parsed.nextQuestion && State.turnCount < State.maxTurns){
+      const nt = State.claims.find(c=>c.id===parsed.nextTargetClaimId);
+      if(nt) nt.active = true;
+      State.exchanges.push({ question: parsed.nextQuestion, flag: parsed.nextFlag || 'mid', claimRef: parsed.nextTargetClaimId });
+    }
+  }catch(err){
+    State.errorMsg = 'The interviewer hit a snag generating the next question. Retry?';
+  }
+  State.loading = false;
+  persistSession();
+  render();
+  updateSidebar();
+}
+
+function advanceInterview(){
+  if(State.exchanges.length===0){ startInterview(); return; }
+  const lastEx = State.exchanges[State.exchanges.length-1];
+  if(lastEx.answer!==undefined && !lastEx.assessment){
+    assessAndContinue();
+  } else {
+    renderComposer();
+  }
+}
+
+/* =========================================================
+   REPORT SCREEN
+========================================================= */
+function renderTopbarReport(el){
+  el.innerHTML = `
+    <button class="btn btn-ghost btn-sm" id="backToInterview">&larr; Back</button>
+    <button class="btn btn-sm" id="exportBtn">Export report</button>
+    <button class="btn btn-primary btn-sm" id="newSessionBtn">New session</button>
+  `;
+  document.getElementById('backToInterview').addEventListener('click', ()=>{ State.screen='interview'; render(); });
+  document.getElementById('exportBtn').addEventListener('click', exportReport);
+  document.getElementById('newSessionBtn').addEventListener('click', ()=>{
+    persistSession();
+    Object.assign(State, { screen:'onboard', sourceText:'', sourceName:'', claims:[], exchanges:[], turnCount:0, currentSessionId:null });
+    render();
+  });
+}
+
+function renderReport(main){
+  const assessed = State.exchanges.filter(e=>e.assessment);
+  const avgScore = assessed.length ? Math.round(assessed.reduce((a,e)=>a+(e.assessment.score||0),0)/assessed.length) : 0;
+  const strongClaims = State.claims.filter(c=>c.status==='strong');
+  const midClaims = State.claims.filter(c=>c.status==='mid');
+  const weakClaims = State.claims.filter(c=>c.status==='weak' || c.status==='pending');
+
+  function claimSection(title, claims, colorClass){
+    if(!claims.length) return '';
+    return `
+      <div class="report-section">
+        <h2>${title}</h2>
+        ${claims.map(c=>{
+          const relevantEx = State.exchanges.find(e=>e.claimRef===c.id && e.assessment);
+          return `
+          <div class="report-claim">
+            <div class="rc-status ${colorClass}" style="background:var(--${colorClass})"></div>
+            <div class="rc-body">
+              <div class="rc-claim-text">${escapeHtml(c.text)}</div>
+              ${relevantEx ? `<div class="rc-note"><b>${relevantEx.assessment.verdict}:</b> ${escapeHtml(relevantEx.assessment.note)}</div>` : `<div class="rc-note">Not yet challenged in this session.</div>`}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  main.innerHTML = `
+    <div class="report-wrap">
+      <div class="report-header">
+        <h1>Defense Report</h1>
+        <p>${escapeHtml(State.sourceName)} &middot; ${State.exchanges.length} question${State.exchanges.length===1?'':'s'} asked &middot; ${new Date().toLocaleDateString()}</p>
+      </div>
+
+      <div class="report-score-row">
+        <div class="score-card">
+          <div class="sc-num" style="color:${avgScore>=70?'var(--strong)':avgScore>=45?'var(--mid)':'var(--weak)'}">${avgScore}%</div>
+          <div class="sc-label">Overall defense confidence</div>
+        </div>
+        <div class="score-card">
+          <div class="sc-num" style="color:var(--strong)">${strongClaims.length}</div>
+          <div class="sc-label">Well-defended claims</div>
+        </div>
+        <div class="score-card">
+          <div class="sc-num" style="color:var(--mid)">${midClaims.length}</div>
+          <div class="sc-label">Partially defended</div>
+        </div>
+        <div class="score-card">
+          <div class="sc-num" style="color:var(--weak)">${weakClaims.length}</div>
+          <div class="sc-label">Needs work</div>
+        </div>
+      </div>
+
+      ${claimSection('Well defended', strongClaims, 'strong')}
+      ${claimSection('Needs tightening', midClaims, 'mid')}
+      ${claimSection('Weak — prepare before the real interview', weakClaims, 'weak')}
+
+      <div class="report-actions">
+        <button class="btn btn-primary" id="continueBtn">Continue defending &rarr;</button>
+        <button class="btn" id="exportBtn2">Export as text</button>
+      </div>
+    </div>
+  `;
+  const cb = document.getElementById('continueBtn');
+  if(cb) cb.addEventListener('click', ()=>{
+    if(State.turnCount < State.maxTurns) State.maxTurns += 6;
+    State.screen='interview'; render();
+  });
+  document.getElementById('exportBtn2').addEventListener('click', exportReport);
+}
+
+function exportReport(){
+  const lines = [];
+  lines.push('DEFENSE REPORT');
+  lines.push(State.sourceName);
+  lines.push(new Date().toLocaleString());
+  lines.push('');
+  State.exchanges.forEach((ex,i)=>{
+    lines.push(`Q${i+1}: ${ex.question}`);
+    if(ex.answer) lines.push(`A${i+1}: ${ex.answer}`);
+    if(ex.assessment) lines.push(`Assessment: ${ex.assessment.verdict} — ${ex.assessment.note} (score ${ex.assessment.score})`);
+    lines.push('');
+  });
+  lines.push('CLAIM STATUS');
+  State.claims.forEach(c=>lines.push(`- [${c.status}] ${c.text}`));
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'defense-report.txt';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* =========================================================
+   UTIL
+========================================================= */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/* =========================================================
+   INIT
+========================================================= */
+loadSessions();
+render();
+
+})();
+</script>
+</body>
+</html>
