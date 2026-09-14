@@ -1,0 +1,15 @@
+## Day 450/60 — Defend Your Experience
+
+Built an adaptive AI mock-interview app that stress-tests resume claims instead of polishing them.
+
+**What it does:**
+- Ingests a resume/experience doc (upload or paste)
+- Uses the Claude API to extract distinct, checkable claims from it
+- Runs a live, adaptive panel-style interview — starts with the weakest claim, drills deeper on vague answers, moves on once a claim is well-defended
+- Tracks per-claim confidence + overall score in real time
+- Generates a final Defense Report: well-defended / needs tightening / weak, exportable as text
+- LocalStorage session history, drag-and-drop upload, dark-mode UI, graceful handling of API rate limits
+
+**Stack:** Single-file HTML/CSS/JS, Claude Sonnet 4.6 via Messages API, no backend.
+
+**Why:** Most interview-prep tools help you write a better resume. This one helps you survive being questioned about it.
